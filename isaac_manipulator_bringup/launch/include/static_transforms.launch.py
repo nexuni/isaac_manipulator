@@ -25,6 +25,50 @@ from isaac_manipulator_ros_python_utils.types import CameraType, TrackingType
 # Dictionary containing the calibration of various camera setups.
 # Every item of the dictionary represents the calibration of a single setup
 calibrations_dict = {
+    'nexuni_demo': {
+        'world_to_hawk': {
+            'parent_frame': 'world',
+            'child_frame': 'hawk',
+            'translation': [-1.75433, -0.0887958, 0.419998],
+            'rotation': [-0.00447052, 0.138631, -0.0101076, 0.990282],  # [qx, qy ,qz, qw]
+        },
+        'world_to_realsense_1': {
+            'parent_frame': 'world',
+            'child_frame': 'camera_1_link',
+            'translation': [0.0590073, 1.56122, 0.745002],
+            'rotation': [0.17472, 0.184359, -0.723358, 0.642058],  # [qx, qy ,qz, qw]
+        },
+        'world_to_realsense_2': {
+            'parent_frame': 'world',
+            'child_frame': 'camera_2_link',
+            'translation': [-1.47782, -1.23458, 0.533205],
+            'rotation': [-0.0636737, 0.206499, 0.343712, 0.913874],  # [qx, qy ,qz, qw]
+        },
+        'world_to_base_link': {
+            'parent_frame': 'world',
+            'child_frame': 'base_link',
+            'translation': [0.0, 0.0, 0.0],
+            'rotation': [0.0, 0.0, 0.0, 1.0],  # [qx, qy ,qz, qw]
+        },
+        'object_to_grasp_frame': {
+            'parent_frame': 'detected_object1',
+            'child_frame': 'goal_frame',
+            'translation': [0.043, 0.359, 0.065],
+            'rotation': [0.553, 0.475, -0.454, 0.513],  # [qx, qy ,qz, qw]
+        },
+        'world_to_target_frame_1': {
+            'parent_frame': 'world',
+            'child_frame': 'target1_frame',
+            'translation': [-0.7, 0.3, 0.4],
+            'rotation': [1.0, 0.0, 0.0, 0.0],  # [qx, qy ,qz, qw]
+        },
+        'world_to_target_frame_2': {
+            'parent_frame': 'world',
+            'child_frame': 'target2_frame',
+            'translation': [-0.7, -0.3, 0.4],
+            'rotation': [1.0, 0.0, 0.0, 0.0],  # [qx, qy ,qz, qw]
+        },
+    },
     'hubble_test_bench': {
         'world_to_hawk': {
             'parent_frame': 'world',
