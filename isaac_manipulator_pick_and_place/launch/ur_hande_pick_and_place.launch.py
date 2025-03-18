@@ -82,6 +82,7 @@ def launch_setup(context, *args, **kwargs):
     else:
         raise NotImplementedError('Gripper type is not supported')
 
+    kinematics_parameters_file = LaunchConfiguration("kinematics_parameters_file")
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name='xacro')]),
@@ -105,6 +106,9 @@ def launch_setup(context, *args, **kwargs):
             ' ',
             'output_recipe_filename:=',
             output_recipe_filename,
+            ' ',
+            'kinematics_parameters_file:=',
+            kinematics_parameters_file,
             ' ',
             'ur_type:=',
             ur_type,
@@ -570,11 +574,11 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_start = [
         manipulation_container,
-        nvblox_launch,
-        cumotion_launch,
-        realsense_launch,
-        hawk_launch,
-        ess_launch,
+        # nvblox_launch,
+        # cumotion_launch,
+        # realsense_launch,
+        # hawk_launch,
+        # ess_launch,
         static_transform_launch,
         # rtdetr_launch,
         # foundationpose_launch,
@@ -758,6 +762,14 @@ def generate_launch_description():
                         'Mac and Cheese box if the SyntheticaDETR v1.0.0 model file is used. '
                         'Refer to the SyntheticaDETR model documentation for additional supported '
                         'objects and their class IDs.',
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'kinematics_parameters_file',
+            default_value='my_robot_calubration.yaml',
+            description='The robot calibration file.',
         )
     )
 
