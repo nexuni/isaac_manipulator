@@ -118,7 +118,9 @@ def launch_setup(context, *args, **kwargs):
             ' ',
             'grasp_parent_frame:=',
             grasp_parent_frame,
-            ' '
+            ' ',
+            # 'read_frequency:=125',
+            # ' ',
         ]
     )
 
@@ -136,7 +138,7 @@ def launch_setup(context, *args, **kwargs):
 
     update_rate_config_file = PathJoinSubstitution(
         [
-            FindPackageShare(runtime_config_package),
+            FindPackageShare('isaac_manipulator_pick_and_place'),
             'config', ur_type.perform(context) + '_update_rate.yaml',
         ]
     )
@@ -395,11 +397,11 @@ def launch_setup(context, *args, **kwargs):
 
     asset_name = ur_type.perform(context) + '_' + gripper_type.perform(context)
     xrdf_file_path = os.path.join(
-        get_package_share_directory('isaac_ros_cumotion_robot_description'), 'xrdf',
+        get_package_share_directory('isaac_manipulator_pick_and_place'), 'xrdf',
         f'{asset_name}.xrdf'
     )
     urdf_file_path = os.path.join(
-        get_package_share_directory('isaac_ros_cumotion_robot_description'),
+        get_package_share_directory('isaac_manipulator_pick_and_place'),
         'urdf',
         f'{asset_name}.urdf',
     )
@@ -574,11 +576,11 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_start = [
         manipulation_container,
-        # nvblox_launch,
-        # cumotion_launch,
-        # realsense_launch,
-        # hawk_launch,
-        # ess_launch,
+        nvblox_launch,
+        cumotion_launch,
+        realsense_launch,
+        hawk_launch,
+        ess_launch,
         static_transform_launch,
         # rtdetr_launch,
         # foundationpose_launch,

@@ -29,7 +29,8 @@
         prefix="" 
         parent="tool0" 
         tty="$(arg com_port)" 
-        use_fake_hardware="$(arg use_fake_hardware)"/>
+        use_fake_hardware="true"/>
+        <!-- use_fake_hardware="$(arg use_fake_hardware)"/> -->
         
 
     <link name="gripper_frame">

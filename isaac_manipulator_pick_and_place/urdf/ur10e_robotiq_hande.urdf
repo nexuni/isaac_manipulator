@@ -357,7 +357,7 @@
   </joint>
 
   <joint name="robotiq_hande_coupler_joint" type="fixed">
-    <origin xyz="0 0 0.00695" rpy="0 0 ${-pi/2.0}"/>
+    <origin xyz="0 0 0.00695" rpy="0 0 -1.57"/>
     <parent link="tool0"/>
     <child link="robotiq_hande_coupler"/>
   </joint>
@@ -490,7 +490,7 @@
   </link>
   <joint name="gripper_joint" type="fixed">
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <parent link="robotiq_base_link"/>
+      <parent link="robotiq_hande_coupler"/>
       <child link="gripper_frame"/>
   </joint>
 
