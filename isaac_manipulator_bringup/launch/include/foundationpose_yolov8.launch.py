@@ -66,7 +66,7 @@ def launch_setup(context, *args, **kwargs):
     if camera_type is CameraType.hawk:
         if is_object_following == 'True':
             rgb_image_topic = '/rgb/image_rect_color'
-            rgb_camera_info_topic = '/rgb/camera_info'
+            # rgb_camera_info_topic = '/rgb/camera_info'
         if is_object_following == 'True':
             depth_image_topic = '/depth_image'
         else:
@@ -75,7 +75,7 @@ def launch_setup(context, *args, **kwargs):
         if is_object_following == 'True':
             realsense_depth_image_topic = '/camera_1/aligned_depth_to_color/image_raw'
             rgb_image_topic = '/camera_1/color/image_raw'
-            rgb_camera_info_topic = '/camera_1/color/camera_info'
+            # rgb_camera_info_topic = '/camera_1/color/camera_info'
         depth_image_topic = realsense_depth_image_topic + '_metric'
     elif camera_type is CameraType.isaac_sim:
         depth_image_topic = foundation_pose_server_depth_topic_name
@@ -86,20 +86,24 @@ def launch_setup(context, *args, **kwargs):
     
     yolov8_input_width = 640
 
-    detection2_d_array_filter_node = ComposableNode(
-        name='detection2_d_array_filter',
-        package='isaac_ros_foundationpose',
-        plugin='nvidia::isaac_ros::foundationpose::Detection2DArrayFilter',
-        parameters=[{
-            'desired_class_id': str(context.perform_substitution(object_class_id))}
-        ],
-        remappings=[('detection2_d_array', detection2_d_array_topic)]
-    )
+    if is_object_following == 'True':
+        detection2_d_array_filter_node = ComposableNode(
+            name='detection2_d_array_filter',
+            package='isaac_ros_foundationpose',
+            plugin='nvidia::isaac_ros::foundationpose::Detection2DArrayFilter',
+            parameters=[{
+                'desired_class_id': str(context.perform_substitution(object_class_id))}
+            ],
+            remappings=[('detection2_d_array', detection2_d_array_topic)]
+        )
 
-    
-    detection2_d_to_mask_node_input_topic = 'detection2_d'
-    resize_camera_info_topic = 'resize/camera_info'
-    crop_input_qos = 'DEFAULT'
+    detection2_d_to_mask_node_input_topic = detection2_d_array_topic
+    resize_camera_info_topic = rgb_camera_info_topic
+
+    if is_object_following == 'True':
+        detection2_d_to_mask_node_input_topic = 'detection2_d'
+        # resize_camera_info_topic = rgb_camera_info_topic
+        crop_input_qos = 'DEFAULT'
 
     detection2_d_to_mask_node = ComposableNode(
         name='detection2_d_to_mask',

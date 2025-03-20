@@ -319,7 +319,7 @@ def launch_setup(context, *args, **kwargs):
 
         # foundation pose server and foundationpose topics
         fp_in_img_topic_name = '/camera_1/color/image_raw'
-        fp_in_camera_info_topic_name = '/resize/camera_info'
+        fp_in_camera_info_topic_name = '/yolov8_encoder/resize/camera_info'
         fp_in_depth_topic_name = '/camera_1/aligned_depth_to_color/image_raw'
 
         foundation_pose_rgb_image_topic = '/foundation_pose_server/camera_1/color/image_raw'
