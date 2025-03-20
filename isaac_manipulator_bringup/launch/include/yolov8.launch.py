@@ -59,7 +59,7 @@ def launch_setup(context, *args, **kwargs):
         dropped_image_topic_name = '/yolov8/image_dropped'
         dropped_camera_info_topic_name = '/yolov8/camera_info_dropped'
         drop_node_nodes.append(ComposableNode(
-            name='rtdetr_drop_node',
+            name='yolov8_drop_node',
             package='isaac_ros_nitros_topic_tools',
             plugin='nvidia::isaac_ros::nitros::NitrosCameraDropNode',
             parameters=[{
@@ -88,23 +88,24 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             [yolov8_encoder_include_dir, '/dnn_image_encoder.launch.py']),
         launch_arguments={
-            'input_image_width': str(image_width),
-            'input_image_height': str(image_height),
+            'input_image_width': str(context.perform_substitution(image_width)),
+            'input_image_height': str(context.perform_substitution(image_height)),
             'network_image_width': str(yolov8_network_width),
             'network_image_height': str(yolov8_network_width),
             'image_mean': image_mean,
             'image_stddev': image_stddev,
             'attach_to_shared_component_container': 'True',
-            'component_container_name': '/isaac_ros_examples/container',
+            'component_container_name': constants.MANIPULATOR_CONTAINER_NAME,
             'dnn_image_encoder_namespace': 'yolov8_encoder',
-            'image_input_topic': '/rgb/image_rect_color',
-            'camera_info_input_topic': '/rgb/camera_info',
+            'image_input_topic': dropped_image_topic_name,
+            'camera_info_input_topic': dropped_camera_info_topic_name,
+            'input_qos': yolov8_input_qos,
             'tensor_output_topic': '/tensor_pub',
         }.items(),
     )
 
     tensor_rt_node = ComposableNode(
-        name='rtdetr_tensor_rt',
+        name='yolov8_tensor_rt',
         package='isaac_ros_tensor_rt',
         plugin='nvidia::isaac_ros::dnn_inference::TensorRTNode',
         parameters=[{
@@ -134,7 +135,6 @@ def launch_setup(context, *args, **kwargs):
     )
     
     final_nodes = [
-        yolov8_encoder_launch,
         tensor_rt_node,
         yolov8_decoder_node,
     ]
@@ -146,6 +146,7 @@ def launch_setup(context, *args, **kwargs):
     final_launch = GroupAction(
         actions=[
             load_composable_nodes,
+            yolov8_encoder_launch
         ],)
 
     return [final_launch]

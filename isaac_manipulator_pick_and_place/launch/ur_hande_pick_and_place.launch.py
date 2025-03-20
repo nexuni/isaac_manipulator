@@ -59,8 +59,8 @@ def launch_setup(context, *args, **kwargs):
     hawk_depth_mode = str(context.perform_substitution(LaunchConfiguration('hawk_depth_mode')))
     time_sync_slop = str(context.perform_substitution(LaunchConfiguration('time_sync_slop')))
     use_pose_from_rviz = LaunchConfiguration('use_pose_from_rviz')
-    rtdetr_object_class_id = str(context.perform_substitution(
-        LaunchConfiguration('rtdetr_object_class_id')))
+    yolov8_object_class_id = str(context.perform_substitution(
+        LaunchConfiguration('yolov8_object_class_id')))
     filter_depth_buffer_time = str(context.perform_substitution(
         LaunchConfiguration('filter_depth_buffer_time')))
     script_filename = PathJoinSubstitution(
@@ -279,11 +279,11 @@ def launch_setup(context, *args, **kwargs):
         nvblox_rgb_camera_info = '/rgb/camera_info'
         nvblox_depth_camera_info = '/rgb/camera_info'
 
-        # object detection server and RT-DETR topics
+        # object detection server and YOLOv8 topics
         obj_input_img_topic_name = '/rgb/image_rect_color'
-        rtdetr_rgb_image_topic = '/object_detection_server/image_rect'
-        rtdetr_rgb_camera_info = '/rgb/camera_info'
-        rtdetr_detections_topic = '/detections'
+        yolov8_rgb_image_topic = '/object_detection_server/image_rect'
+        yolov8_rgb_camera_info = '/rgb/camera_info'
+        yolov8_detections_topic = '/detections'
 
         # foundation pose server and foundationpose topics
         fp_in_img_topic_name = '/rgb/image_rect_color'
@@ -311,11 +311,11 @@ def launch_setup(context, *args, **kwargs):
         nvblox_rgb_camera_info = '/camera_1/color/camera_info'
         nvblox_depth_camera_info = '/camera_1/aligned_depth_to_color/camera_info'
 
-        # object detection server and RT-DETR topics
+        # object detection server and YOLOv8 topics
         obj_input_img_topic_name = '/camera_1/color/image_raw'
-        rtdetr_rgb_image_topic = '/object_detection_server/image_rect'
-        rtdetr_rgb_camera_info = '/camera_1/color/camera_info'
-        rtdetr_detections_topic = '/detections'
+        yolov8_rgb_image_topic = '/object_detection_server/image_rect'
+        yolov8_rgb_camera_info = '/camera_1/color/camera_info'
+        yolov8_detections_topic = '/detections'
 
         # foundation pose server and foundationpose topics
         fp_in_img_topic_name = '/camera_1/color/image_raw'
@@ -432,29 +432,47 @@ def launch_setup(context, *args, **kwargs):
             'trigger_aabb_object_clearing': 'True'
         }.items(),
     )
-    """
+    
     isaac_ros_ws_path = lu.get_isaac_ros_ws_path()
 
-    rtdetr_launch = IncludeLaunchDescription(
+    yolov8_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            [launch_files_include_dir, '/rtdetr.launch.py']
+            [launch_files_include_dir, '/yolov8.launch.py']
         ),
         launch_arguments={
             'camera_type': '',
             'image_width': str(rgb_image_width),
             'image_height': str(rgb_image_height),
-            'image_input_topic': rtdetr_rgb_image_topic,
-            'camera_info_input_topic': rtdetr_rgb_camera_info,
-            'detections_2d_array_output_topic': rtdetr_detections_topic,
-            'rtdetr_is_object_following': 'False',
-            'rtdetr_engine_file_path':
-                isaac_ros_ws_path + '/isaac_ros_assets/models/synthetica_detr/sdetr_grasp.plan'
+            'image_input_topic': yolov8_rgb_image_topic,
+            'camera_info_input_topic': yolov8_rgb_camera_info,
+            'detections_2d_array_output_topic': yolov8_detections_topic,
+            'yolov8_is_object_following': 'False',
+            'yolov8_engine_file_path':
+                isaac_ros_ws_path + '/isaac_ros_assets/models/yolov8/robot8.plan',
+            'yolov8_model_file_path':
+                isaac_ros_ws_path + '/isaac_ros_assets/models/yolov8/robot8.onnx',
         }.items()
     )
 
+    # Get the mesh file according to the input object id and the labels.yaml file
+    labels_file_path = os.path.join(
+        isaac_ros_ws_path, '/isaac_ros_assets/models/yolov8', 'labels.yaml'
+    )
+    with open(labels_file_path) as labels_file:
+        labels_config = yaml.safe_load(labels_file)
+
+    if int(yolov8_object_class_id) not in labels_config["yolov8"]["labels"]:
+        raise NotImplementedError('Object Class Id is not supported')
+
+    object_folder_name = labels_config["yolov8"]["labels"][int(yolov8_object_class_id)]
+    object_folder_path = os.path.join(
+        isaac_ros_ws_path, '/isaac_ros_assets/isaac_ros_foundationpose', object_folder_name
+    )
+
+
     foundationpose_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            [launch_files_include_dir, '/foundationpose.launch.py']
+            [launch_files_include_dir, '/foundationpose_yolov8.launch.py']
         ),
         launch_arguments={
             'camera_type': camera_type,
@@ -467,11 +485,8 @@ def launch_setup(context, *args, **kwargs):
             'foundation_pose_server_depth_topic_name': foundation_pose_depth_image_topic,
             'realsense_depth_image_topic': foundation_pose_depth_image_topic,
             'detection2_d_array_topic': foundation_pose_detections_topic,
-            'mesh_file_path': isaac_ros_ws_path + '/isaac_ros_assets/isaac_ros_foundationpose'
-                                                  '/Mac_and_cheese_0_1/Mac_and_cheese_0_1.obj',
-            'texture_path': isaac_ros_ws_path + '/isaac_ros_assets/isaac_ros_foundationpose/'
-                                                'Mac_and_cheese_0_1/materials/textures/'
-                                                'baked_mesh_tex0.png',
+            'mesh_file_path': object_folder_path + 'AR-Code-Object-Capture-app.obj',
+            'texture_path': object_folder_path + 'baked_mesh_tex0.png',
             'refine_model_file_path': isaac_ros_ws_path + '/isaac_ros_assets/models'
                                                           '/foundationpose/refine_model.onnx',
             'refine_engine_file_path': isaac_ros_ws_path + '/isaac_ros_assets/models'
@@ -481,10 +496,10 @@ def launch_setup(context, *args, **kwargs):
                                                          '/models/foundationpose/score_model.onnx',
             'score_engine_file_path': isaac_ros_ws_path + '/isaac_ros_assets/models/'
                                                           'foundationpose/score_trt_engine.plan',
-            'object_class_id': rtdetr_object_class_id
+            'object_class_id': yolov8_object_class_id
         }.items()
     )
-
+    """
     # Add objectinfo servers
     isaac_manipulator_servers_include_dir = os.path.join(
         get_package_share_directory('isaac_manipulator_servers'), 'launch')
@@ -494,7 +509,7 @@ def launch_setup(context, *args, **kwargs):
             [isaac_manipulator_servers_include_dir, '/object_detection_server.launch.py']),
         launch_arguments={
             'obj_input_img_topic_name': obj_input_img_topic_name,
-            'obj_output_img_topic_name': rtdetr_rgb_image_topic,
+            'obj_output_img_topic_name': yolov8_rgb_image_topic,
         }.items(),
     )
 
@@ -582,7 +597,7 @@ def launch_setup(context, *args, **kwargs):
         hawk_launch,
         ess_launch,
         static_transform_launch,
-        # rtdetr_launch,
+        # yolov8_launch,
         # foundationpose_launch,
         rviz_node,
         ur_control_node,
@@ -758,12 +773,8 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            'rtdetr_object_class_id',
-            default_value='22',
-            description='Class ID of the object to be detected. The default corresponds to the '
-                        'Mac and Cheese box if the SyntheticaDETR v1.0.0 model file is used. '
-                        'Refer to the SyntheticaDETR model documentation for additional supported '
-                        'objects and their class IDs.',
+            'yolov8_object_class_id',
+            description='Class ID of the object to be detected.',
         )
     )
 
