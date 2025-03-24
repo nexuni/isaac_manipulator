@@ -119,8 +119,6 @@ def launch_setup(context, *args, **kwargs):
             'grasp_parent_frame:=',
             grasp_parent_frame,
             ' ',
-            # 'read_frequency:=125',
-            # ' ',
         ]
     )
 
@@ -195,7 +193,7 @@ def launch_setup(context, *args, **kwargs):
                 '--controller-manager',
                 '/controller_manager',
                 '--controller-manager-timeout',
-                controller_spawner_timeout,
+                controller_spawner_timeout
             ]
             + inactive_flags
             + controllers,
@@ -207,8 +205,7 @@ def launch_setup(context, *args, **kwargs):
         'speed_scaling_state_broadcaster',
         'force_torque_sensor_broadcaster',
         'robotiq_gripper_controller',
-        # 'robotiq_activation_controller',
-        # 'gripper_action_controller',
+        'robotiq_activation_controller',
     ]
 
     controller_spawners = [controller_spawner(controllers_active)]
@@ -319,7 +316,7 @@ def launch_setup(context, *args, **kwargs):
 
         # foundation pose server and foundationpose topics
         fp_in_img_topic_name = '/camera_1/color/image_raw'
-        fp_in_camera_info_topic_name = '/yolov8_encoder/resize/camera_info'
+        fp_in_camera_info_topic_name = '/camera_1/color/camera_info' #'/yolov8_encoder/resize/camera_info' seems to be broken
         fp_in_depth_topic_name = '/camera_1/aligned_depth_to_color/image_raw'
 
         foundation_pose_rgb_image_topic = '/foundation_pose_server/camera_1/color/image_raw'
@@ -428,12 +425,21 @@ def launch_setup(context, *args, **kwargs):
             'workspace_bounds_name': setup,
             'tool_frame': 'gripper_frame',
             'urdf_file_path': urdf_file_path,
-            'enable_object_attachment': 'True',
+            'enable_object_attachment': 'False', # TODO: should be True
             'trigger_aabb_object_clearing': 'True'
         }.items(),
     )
     
     isaac_ros_ws_path = lu.get_isaac_ros_ws_path()
+
+    # Get the mesh file according to the input object id and the labels.yaml file
+    labels_file_path = os.path.join(
+        isaac_ros_ws_path, 'isaac_ros_assets/models/yolov8', 'labels.yaml'
+    )
+    with open(labels_file_path) as labels_file:
+        labels_config = yaml.safe_load(labels_file)
+
+    number_of_classes = len(labels_config["yolov8"]["labels"])
 
     yolov8_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -451,15 +457,9 @@ def launch_setup(context, *args, **kwargs):
                 isaac_ros_ws_path + '/isaac_ros_assets/models/yolov8/robot8.plan',
             'yolov8_model_file_path':
                 isaac_ros_ws_path + '/isaac_ros_assets/models/yolov8/robot8.onnx',
+            'number_of_classes': number_of_classes,
         }.items()
     )
-
-    # Get the mesh file according to the input object id and the labels.yaml file
-    labels_file_path = os.path.join(
-        isaac_ros_ws_path, '/isaac_ros_assets/models/yolov8', 'labels.yaml'
-    )
-    with open(labels_file_path) as labels_file:
-        labels_config = yaml.safe_load(labels_file)
 
     if int(yolov8_object_class_id) not in labels_config["yolov8"]["labels"]:
         raise NotImplementedError('Object Class Id is not supported')
@@ -591,12 +591,12 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_start = [
         manipulation_container,
-        nvblox_launch,
+        # nvblox_launch,
         cumotion_launch,
-        realsense_launch,
-        hawk_launch,
-        ess_launch,
-        static_transform_launch,
+        # realsense_launch,
+        # hawk_launch,
+        # ess_launch,
+        # static_transform_launch,
         # yolov8_launch,
         # foundationpose_launch,
         rviz_node,

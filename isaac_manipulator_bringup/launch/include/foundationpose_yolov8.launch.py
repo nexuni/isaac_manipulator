@@ -73,9 +73,10 @@ def launch_setup(context, *args, **kwargs):
             depth_image_topic = foundation_pose_server_depth_topic_name
     elif camera_type is CameraType.realsense:
         if is_object_following == 'True':
-            realsense_depth_image_topic = '/camera_1/aligned_depth_to_color/image_raw'
-            rgb_image_topic = '/camera_1/color/image_raw'
+            # realsense_depth_image_topic = '/camera_1/aligned_depth_to_color/image_raw'
+            # rgb_image_topic = '/camera_1/color/image_raw'
             # rgb_camera_info_topic = '/camera_1/color/camera_info'
+            pass
         depth_image_topic = realsense_depth_image_topic + '_metric'
     elif camera_type is CameraType.isaac_sim:
         depth_image_topic = foundation_pose_server_depth_topic_name
@@ -123,11 +124,11 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{
             'input_width': 640,
             'input_height': 640,
-            'crop_width': rgb_image_width,   # Add crop width
-            'crop_height': rgb_image_height, # Add crop height
+            'crop_width': 640,   # Add crop width
+            'crop_height': int(rgb_image_height*640/rgb_image_width), # Add crop height
             'crop_mode': 'CENTER',           # Add crop mode (adjust as needed)
-            'input_qos': crop_input_qos,
-            'output_qos': 'DEFAULT',
+            # 'input_qos': crop_input_qos,
+            # 'output_qos': 'DEFAULT',
         }],
         remappings=[
             ('image', 'yolov8_segmentation'),
@@ -141,7 +142,9 @@ def launch_setup(context, *args, **kwargs):
     convert_metric_node = ComposableNode(
         package='isaac_ros_depth_image_proc',
         plugin='nvidia::isaac_ros::depth_image_proc::ConvertMetricNode',
-        parameters=[{'input_qos': sensor_data_config}],
+        parameters=[
+            # {'input_qos': sensor_data_config}
+        ],
         remappings=[
             ('image_raw', realsense_depth_image_topic),
             ('image', depth_image_topic)
@@ -153,9 +156,9 @@ def launch_setup(context, *args, **kwargs):
         package='isaac_ros_foundationpose',
         plugin='nvidia::isaac_ros::foundationpose::FoundationPoseNode',
         parameters=[{
-            'depth_qos': sensor_data_config,
-            'color_qos': sensor_data_config,
-            'color_info_qos': sensor_data_config,
+            # 'depth_qos': sensor_data_config,
+            # 'color_qos': sensor_data_config,
+            # 'color_info_qos': sensor_data_config,
             'segmentation_qos': 'DEFAULT',
 
             'mesh_file_path': mesh_file_path,
@@ -188,11 +191,13 @@ def launch_setup(context, *args, **kwargs):
     )
 
     composable_node_descriptions = [
-        detection2_d_array_filter_node,
         detection2_d_to_mask_node,
         crop_mask_node,
         foundationpose_node,
     ]
+
+    if is_object_following == 'True':
+        composable_node_descriptions.append(detection2_d_array_filter_node)
 
     load_composable_nodes = LoadComposableNodes(
         target_container=constants.MANIPULATOR_CONTAINER_NAME,

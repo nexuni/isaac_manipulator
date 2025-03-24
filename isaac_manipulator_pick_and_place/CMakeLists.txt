@@ -34,6 +34,7 @@ install(PROGRAMS
   scripts/pick_and_place_orchestrator.py
   scripts/grasp_reader.py
   scripts/end_effector_marker.py
+  scripts/mono16_resize_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

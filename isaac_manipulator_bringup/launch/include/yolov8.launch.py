@@ -19,6 +19,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 
+from launch_ros.actions import Node
 from isaac_ros_launch_utils.all_types import ComposableNode, DeclareLaunchArgument, \
     LaunchConfiguration, LoadComposableNodes, LaunchDescription, GroupAction, OpaqueFunction, \
     IncludeLaunchDescription, PythonLaunchDescriptionSource
@@ -64,19 +65,81 @@ def launch_setup(context, *args, **kwargs):
             plugin='nvidia::isaac_ros::nitros::NitrosCameraDropNode',
             parameters=[{
                 'input_qos': yolov8_input_qos,
-                'output_qos': yolov8_input_qos,
+                # 'output_qos': yolov8_input_qos,
                 'X': dropped_fps,
                 'Y': input_fps,
-                'mode': 'mono',
+                'mode': 'mono+depth',
+                'depth_format_string': 'nitros_image_mono16',
                 'sync_queue_size': 100
             }],
             remappings=[
                 ('image_1', image_input_topic),
                 ('camera_info_1', camera_info_input_topic),
+                ('depth_1', '/camera_1/aligned_depth_to_color/image_raw'),
                 ('image_1_drop', dropped_image_topic_name),
-                ('camera_info_1_drop', dropped_camera_info_topic_name)
+                ('camera_info_1_drop', dropped_camera_info_topic_name),
+                ('depth_1_drop', '/yolov8/depth/image_dropped'),
             ]
         ))
+
+        # drop_node_nodes.append(ComposableNode(
+        #     name='yolov8_drop_depth_node',
+        #     package='isaac_ros_nitros_topic_tools',
+        #     plugin='nvidia::isaac_ros::nitros::NitrosCameraDropNode',
+        #     parameters=[{
+        #         'input_qos': yolov8_input_qos,
+        #         # 'output_qos': yolov8_input_qos,
+        #         'X': dropped_fps,
+        #         'Y': input_fps,
+        #         'mode': 'mono',
+        #         'sync_queue_size': 100
+        #     }],
+        #     remappings=[
+        #         ('image_1', '/camera_1/aligned_depth_to_color/image_raw'),
+        #         ('camera_info_1', '/camera_1/aligned_depth_to_color/camera_info'),
+        #         ('image_1_drop', '/yolov8/depth/image_dropped'),
+        #         ('camera_info_1_drop', '/yolov8/depth/camera_info_dropped'),
+        #     ]
+        # ))
+
+    intermediat_image_width = 640
+    intermediat_image_height = 360
+
+    resize_node = ComposableNode(
+        name='yolov8_resize_node',
+        package='isaac_ros_image_proc',
+        plugin='nvidia::isaac_ros::image_proc::ResizeNode',
+        parameters=[{
+            # 'input_qos': yolov8_input_qos,
+            'input_width': image_width,
+            'input_height': image_height,
+            'output_width': intermediat_image_width,
+            'keep_aspect_ratio': True,
+            'encoding_desired': 'rgb8',
+            'disable_padding': True
+        }],
+        remappings=[
+            ('image', dropped_image_topic_name),
+            ('camera_info', dropped_camera_info_topic_name),
+        ],
+    )
+
+    resize_depth_node = Node(
+        name='yolov8_resize_depth_node',
+        package='isaac_manipulator_pick_and_place',
+        executable='mono16_resize_node.py',
+        parameters=[{
+            # 'input_qos': yolov8_input_qos,
+            'input_width': image_width,
+            'input_height': image_height,
+            'output_width': intermediat_image_width,
+            'output_height': intermediat_image_height,
+        }],
+        remappings=[
+            ('image_raw', '/yolov8/depth/image_dropped'),
+            ('image_raw_output', '/resize_depth/image'),
+        ],
+    )
 
     yolov8_network_width = 640
     image_mean = '[0.0, 0.0, 0.0]'
@@ -97,9 +160,9 @@ def launch_setup(context, *args, **kwargs):
             'attach_to_shared_component_container': 'True',
             'component_container_name': constants.MANIPULATOR_CONTAINER_NAME,
             'dnn_image_encoder_namespace': 'yolov8_encoder',
-            'image_input_topic': dropped_image_topic_name,
-            'camera_info_input_topic': dropped_camera_info_topic_name,
-            'input_qos': yolov8_input_qos,
+            'image_input_topic': '/resize/image',
+            'camera_info_input_topic': '/resize/camera_info',
+            # 'input_qos': yolov8_input_qos,
             'tensor_output_topic': '/tensor_pub',
         }.items(),
     )
@@ -135,6 +198,7 @@ def launch_setup(context, *args, **kwargs):
     )
     
     final_nodes = [
+        resize_node,
         tensor_rt_node,
         yolov8_decoder_node,
     ]
@@ -146,7 +210,8 @@ def launch_setup(context, *args, **kwargs):
     final_launch = GroupAction(
         actions=[
             load_composable_nodes,
-            yolov8_encoder_launch
+            yolov8_encoder_launch,
+            resize_depth_node
         ],)
 
     return [final_launch]
