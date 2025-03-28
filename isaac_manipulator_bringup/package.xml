@@ -45,7 +45,7 @@ SPDX-License-Identifier: Apache-2.0
   <depend>isaac_ros_moveit_goal_setter</depend>
   <depend>isaac_ros_nitros_topic_tools</depend>
   <depend>isaac_ros_pose_proc</depend>
-  <depend>isaac_ros_rtdetr</depend>
+  <depend>isaac_ros_yolov8</depend>
   <depend>isaac_ros_tensor_proc</depend>
   <depend>nvblox_ros</depend>
   <depend>nvblox_examples_bringup</depend>

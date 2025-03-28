@@ -466,7 +466,7 @@ def launch_setup(context, *args, **kwargs):
 
     object_folder_name = labels_config["yolov8"]["labels"][int(yolov8_object_class_id)]
     object_folder_path = os.path.join(
-        isaac_ros_ws_path, '/isaac_ros_assets/isaac_ros_foundationpose', object_folder_name
+        isaac_ros_ws_path, 'isaac_ros_assets/isaac_ros_foundationpose', object_folder_name
     )
 
 
@@ -485,8 +485,8 @@ def launch_setup(context, *args, **kwargs):
             'foundation_pose_server_depth_topic_name': foundation_pose_depth_image_topic,
             'realsense_depth_image_topic': foundation_pose_depth_image_topic,
             'detection2_d_array_topic': foundation_pose_detections_topic,
-            'mesh_file_path': object_folder_path + 'AR-Code-Object-Capture-app.obj',
-            'texture_path': object_folder_path + 'baked_mesh_tex0.png',
+            'mesh_file_path': object_folder_path + '/AR-Code-Object-Capture-app.obj',
+            'texture_path': object_folder_path + '/baked_mesh_tex0.png',
             'refine_model_file_path': isaac_ros_ws_path + '/isaac_ros_assets/models'
                                                           '/foundationpose/refine_model.onnx',
             'refine_engine_file_path': isaac_ros_ws_path + '/isaac_ros_assets/models'

@@ -65,7 +65,7 @@ def launch_setup(context, *args, **kwargs):
             plugin='nvidia::isaac_ros::nitros::NitrosCameraDropNode',
             parameters=[{
                 'input_qos': yolov8_input_qos,
-                # 'output_qos': yolov8_input_qos,
+                'output_qos': yolov8_input_qos,
                 'X': dropped_fps,
                 'Y': input_fps,
                 'mode': 'mono+depth',
@@ -110,7 +110,7 @@ def launch_setup(context, *args, **kwargs):
         package='isaac_ros_image_proc',
         plugin='nvidia::isaac_ros::image_proc::ResizeNode',
         parameters=[{
-            # 'input_qos': yolov8_input_qos,
+            'input_qos': yolov8_input_qos,
             'input_width': image_width,
             'input_height': image_height,
             'output_width': intermediat_image_width,
@@ -129,7 +129,7 @@ def launch_setup(context, *args, **kwargs):
         package='isaac_manipulator_pick_and_place',
         executable='mono16_resize_node.py',
         parameters=[{
-            # 'input_qos': yolov8_input_qos,
+            'input_qos': yolov8_input_qos,
             'input_width': image_width,
             'input_height': image_height,
             'output_width': intermediat_image_width,
