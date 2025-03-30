@@ -41,8 +41,6 @@ def launch_setup(context, *args, **kwargs):
     score_engine_file_path = LaunchConfiguration('score_engine_file_path')
     rgb_image_width = int(context.perform_substitution(LaunchConfiguration('rgb_image_width')))
     rgb_image_height = int(context.perform_substitution(LaunchConfiguration('rgb_image_height')))
-    depth_image_width = LaunchConfiguration('depth_image_width')
-    depth_image_height = LaunchConfiguration('depth_image_height')
     object_class_id = LaunchConfiguration('object_class_id')
     refine_iterations = int(context.perform_substitution(LaunchConfiguration('refine_iterations')))
     symmetry_planes = LaunchConfiguration('symmetry_planes')
@@ -63,25 +61,8 @@ def launch_setup(context, *args, **kwargs):
 
     sensor_data_config = 'SENSOR_DATA'
     crop_input_qos = 'SENSOR_DATA'
-    if camera_type is CameraType.hawk:
-        if is_object_following == 'True':
-            rgb_image_topic = '/rgb/image_rect_color'
-            # rgb_camera_info_topic = '/rgb/camera_info'
-        if is_object_following == 'True':
-            depth_image_topic = '/depth_image'
-        else:
-            depth_image_topic = foundation_pose_server_depth_topic_name
-    elif camera_type is CameraType.realsense:
-        if is_object_following == 'True':
-            # realsense_depth_image_topic = '/camera_1/aligned_depth_to_color/image_raw'
-            # rgb_image_topic = '/camera_1/color/image_raw'
-            # rgb_camera_info_topic = '/camera_1/color/camera_info'
-            pass
+    if camera_type is CameraType.realsense:
         depth_image_topic = realsense_depth_image_topic + '_metric'
-    elif camera_type is CameraType.isaac_sim:
-        depth_image_topic = foundation_pose_server_depth_topic_name
-        sensor_data_config = 'DEFAULT'
-        crop_input_qos = 'DEFAULT'
     else:
         raise Exception(f'CameraType {camera_type} not implemented.')
     
@@ -103,7 +84,6 @@ def launch_setup(context, *args, **kwargs):
 
     if is_object_following == 'True':
         detection2_d_to_mask_node_input_topic = 'detection2_d'
-        # resize_camera_info_topic = rgb_camera_info_topic
         crop_input_qos = 'DEFAULT'
 
     detection2_d_to_mask_node = ComposableNode(

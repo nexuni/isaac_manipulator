@@ -21,6 +21,7 @@ import os
 import yaml
 
 from launch_ros.actions import ComposableNodeContainer, Node
+from launch_ros.descriptions import ComposableNode
 from launch_ros.parameter_descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
 
@@ -256,44 +257,8 @@ def launch_setup(context, *args, **kwargs):
         parameters=[move_it_dict],
     )
 
-    if camera_type == str(CameraType.hawk):
-        # Image Resolution
-        if hawk_depth_mode == str(DepthType.ess_light):
-            depth_image_width = 480
-            depth_image_height = 288
-        else:
-            depth_image_width = 960
-            depth_image_height = 576
-        rgb_image_width = 1920
-        rgb_image_height = 1200
-
-        # CuMotion topics
-        cumotion_depth_image_topics = '["/depth_image"]'
-        cumotion_depth_camera_infos = '["/rgb/camera_info"]'
-
-        # Nvblox topics
-        nvblox_rgb_image_topic = '/rgb/image_rect_color'
-        nvblox_rgb_camera_info = '/rgb/camera_info'
-        nvblox_depth_camera_info = '/rgb/camera_info'
-
-        # object detection server and YOLOv8 topics
-        obj_input_img_topic_name = '/rgb/image_rect_color'
-        yolov8_rgb_image_topic = '/object_detection_server/image_rect'
-        yolov8_rgb_camera_info = '/rgb/camera_info'
-        yolov8_detections_topic = '/detections'
-
-        # foundation pose server and foundationpose topics
-        fp_in_img_topic_name = '/rgb/image_rect_color'
-        fp_in_camera_info_topic_name = '/resize/camera_info'
-        fp_in_depth_topic_name = '/depth_image'
-
-        foundation_pose_rgb_image_topic = 'foundation_pose_server/rgb/image_rect_color'
-        foundation_pose_rgb_camera_info = 'foundation_pose_server/resize/camera_info'
-        foundation_pose_depth_image_topic = 'foundation_pose_server/depth_image'
-        foundation_pose_detections_topic = 'foundation_pose_server/bbox'
-
-    elif camera_type == str(CameraType.realsense):
-        # Image Resolution
+    if camera_type == str(CameraType.realsense):
+        # Original Image Resolution
         depth_image_width = 1280
         depth_image_height = 720
         rgb_image_width = 1280
@@ -308,16 +273,23 @@ def launch_setup(context, *args, **kwargs):
         nvblox_rgb_camera_info = '/camera_1/color/camera_info'
         nvblox_depth_camera_info = '/camera_1/aligned_depth_to_color/camera_info'
 
+        # object detection image size
+        obj_detection_width = 640
+        obj_detection_height = int(rgb_image_height * obj_detection_width / rgb_image_width)
+        input_image_topic = '/camera_1/color/image_raw'
+        input_camera_info = '/camera_1/color/camera_info'
+        input_depth_topic = '/camera_1/aligned_depth_to_color/image_raw'
+
         # object detection server and YOLOv8 topics
-        obj_input_img_topic_name = '/camera_1/color/image_raw'
+        obj_input_img_topic_name = '/resize/image'
         yolov8_rgb_image_topic = '/object_detection_server/image_rect'
-        yolov8_rgb_camera_info = '/camera_1/color/camera_info'
+        yolov8_rgb_camera_info = '/resize/camera_info'
         yolov8_detections_topic = '/detections'
 
         # foundation pose server and foundationpose topics
-        fp_in_img_topic_name = '/camera_1/color/image_raw'
-        fp_in_camera_info_topic_name = '/camera_1/color/camera_info' #'/yolov8_encoder/resize/camera_info' seems to be broken
-        fp_in_depth_topic_name = '/camera_1/aligned_depth_to_color/image_raw'
+        fp_in_img_topic_name = '/resize/image'
+        fp_in_camera_info_topic_name = '/resize/camera_info'
+        fp_in_depth_topic_name = '/resize_depth/image'
 
         foundation_pose_rgb_image_topic = '/foundation_pose_server/camera_1/color/image_raw'
         foundation_pose_rgb_camera_info = '/foundation_pose_server/resize/camera_info'
@@ -354,20 +326,6 @@ def launch_setup(context, *args, **kwargs):
             [f'"{camera_type}"', ' == ', f'"{str(CameraType.realsense)}"'])),
     )
 
-    hawk_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([launch_files_include_dir, '/hawk.launch.py']),
-        condition=IfCondition(PythonExpression(
-            [f'"{camera_type}"', ' == ', f'"{str(CameraType.hawk)}"'])),
-    )
-    
-    ess_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([launch_files_include_dir, '/ess.launch.py']),
-        launch_arguments={
-            'ess_mode': hawk_depth_mode,
-        }.items(),
-        condition=IfCondition(PythonExpression(
-            [f'"{camera_type}"', ' == ', f'"{str(CameraType.hawk)}"'])),
-    )
 
     launch_files_include_dir = os.path.join(
         get_package_share_directory('isaac_manipulator_bringup'), 'launch', 'include')
@@ -432,6 +390,45 @@ def launch_setup(context, *args, **kwargs):
     
     isaac_ros_ws_path = lu.get_isaac_ros_ws_path()
 
+    # Create resize node of rgb and depth image for object detection
+    resize_node = ComposableNode(
+        name='object_detection_resize_node',
+        package='isaac_ros_image_proc',
+        plugin='nvidia::isaac_ros::image_proc::ResizeNode',
+        parameters=[{
+            'input_qos': 'SENSOR_DATA',
+            'input_width': rgb_image_width,
+            'input_height': rgb_image_height,
+            'output_width': obj_detection_width,
+            'keep_aspect_ratio': True,
+            'encoding_desired': 'rgb8',
+            'disable_padding': True
+        }],
+        remappings=[
+            ('image', input_image_topic),
+            ('camera_info', input_camera_info),
+            ('resize/image', fp_in_img_topic_name),
+            ('resize/camera_info', fp_in_camera_info_topic_name),
+        ],
+    )
+
+    resize_depth_node = Node(
+        name='object_detection_resize_depth_node',
+        package='isaac_manipulator_pick_and_place',
+        executable='mono16_resize_node.py',
+        parameters=[{
+            'input_qos': 'SENSOR_DATA',
+            'input_width': depth_image_width,
+            'input_height': depth_image_height,
+            'output_width': obj_detection_width,
+            'output_height': obj_detection_height,
+        }],
+        remappings=[
+            ('image_raw', input_depth_topic),
+            ('image_raw_output', fp_in_depth_topic_name),
+        ],
+    )
+
     # Get the mesh file according to the input object id and the labels.yaml file
     labels_file_path = os.path.join(
         isaac_ros_ws_path, 'isaac_ros_assets/models/yolov8', 'labels.yaml'
@@ -446,18 +443,16 @@ def launch_setup(context, *args, **kwargs):
             [launch_files_include_dir, '/yolov8.launch.py']
         ),
         launch_arguments={
-            'camera_type': '',
-            'image_width': str(rgb_image_width),
-            'image_height': str(rgb_image_height),
+            'image_width': str(obj_detection_width),
+            'image_height': str(obj_detection_height),
             'image_input_topic': yolov8_rgb_image_topic,
             'camera_info_input_topic': yolov8_rgb_camera_info,
             'detections_2d_array_output_topic': yolov8_detections_topic,
-            'yolov8_is_object_following': 'False',
             'yolov8_engine_file_path':
                 isaac_ros_ws_path + '/isaac_ros_assets/models/yolov8/robot8.plan',
             'yolov8_model_file_path':
                 isaac_ros_ws_path + '/isaac_ros_assets/models/yolov8/robot8.onnx',
-            'number_of_classes': number_of_classes,
+            'number_of_classes': str(number_of_classes),
         }.items()
     )
 
@@ -476,10 +471,10 @@ def launch_setup(context, *args, **kwargs):
         ),
         launch_arguments={
             'camera_type': camera_type,
-            'rgb_image_width': str(rgb_image_width),
-            'rgb_image_height': str(rgb_image_height),
-            'depth_image_width': str(depth_image_width),
-            'depth_image_height': str(depth_image_height),
+            'rgb_image_width': str(obj_detection_width),
+            'rgb_image_height': str(obj_detection_height),
+            # 'depth_image_width': str(obj_detection_width),
+            # 'depth_image_height': str(obj_detection_height),
             'rgb_image_topic': foundation_pose_rgb_image_topic,
             'rgb_camera_info_topic': foundation_pose_rgb_camera_info,
             'foundation_pose_server_depth_topic_name': foundation_pose_depth_image_topic,
@@ -499,7 +494,7 @@ def launch_setup(context, *args, **kwargs):
             'object_class_id': yolov8_object_class_id
         }.items()
     )
-    """
+    
     # Add objectinfo servers
     isaac_manipulator_servers_include_dir = os.path.join(
         get_package_share_directory('isaac_manipulator_servers'), 'launch')
@@ -533,11 +528,11 @@ def launch_setup(context, *args, **kwargs):
 
     grasp_config_file = (
         get_package_share_directory('isaac_manipulator_pick_and_place') +
-        '/config/' + gripper_type.perform(context) + '_grasps_mac_and_cheese.yaml'
+        '/config/' + gripper_type.perform(context) + '_grasps_' + object_folder_name + '.yaml'
     )
+    """
     gripper_collision_links = get_gripper_collision_links(GripperType(
         gripper_type.perform(context)))
-
     mesh_uri = f'package://isaac_manipulator_pick_and_place/'\
                f'meshes/{gripper_type.perform(context)}.obj'
     pick_and_place_orchestrator_node = Node(
@@ -566,7 +561,9 @@ def launch_setup(context, *args, **kwargs):
         namespace='',
         package='rclcpp_components',
         executable='component_container_mt',
-        composable_node_descriptions=[],
+        composable_node_descriptions=[
+            resize_node,
+        ],
         arguments=['--ros-args', '--log-level', 'nvblox_node:=error'],
         output='screen'
     )
@@ -592,25 +589,25 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_start = [
         manipulation_container,
         # nvblox_launch,
-        cumotion_launch,
-        # realsense_launch,
-        # hawk_launch,
-        # ess_launch,
+        # cumotion_launch,
+        realsense_launch,
         # static_transform_launch,
-        # yolov8_launch,
-        # foundationpose_launch,
+        resize_depth_node,
+        yolov8_launch,
+        foundationpose_launch,
         rviz_node,
-        ur_control_node,
-        controller_stopper_node,
-        urscript_interface,
-        robot_state_publisher_node,
-        initial_joint_controller_spawner_started,
-        move_group_node,
-        # object_detection_server_launch,
-        # foundation_pose_server_launch,
-        # objectinfo_server_launch,
+        # ur_control_node,
+        # controller_stopper_node,
+        # urscript_interface,
+        # robot_state_publisher_node,
+        # initial_joint_controller_spawner_started,
+        # move_group_node,
+        object_detection_server_launch,
+        foundation_pose_server_launch,
+        objectinfo_server_launch,
         # pick_and_place_orchestrator_node,
-    ] + controller_spawners
+    ] 
+    # + controller_spawners
 
     return nodes_to_start
 
@@ -708,7 +705,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'camera_type',
             default_value=str(CameraType.realsense),
-            choices=[str(CameraType.hawk), str(CameraType.realsense)],
+            choices=[str(CameraType.realsense)],
             description='Camera sensor to use'
         )
     )
