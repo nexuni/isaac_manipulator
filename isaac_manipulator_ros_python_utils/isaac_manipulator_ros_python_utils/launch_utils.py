@@ -192,6 +192,17 @@ def get_gripper_collision_links(gripper_name: GripperType = GripperType.ROBOTIQ_
             'tool0',
             'wrist_3_link',
         ]
+    elif gripper_name == GripperType.ROBOTIQ_HANDE:
+        return [
+            'robotiq_hande_coupler',
+            'robotiq_hande_link',
+            'robotiq_hande_left_finger',
+            'robotiq_hande_right_finger',
+            'robotiq_hande_end',
+            'tool0',
+            'wrist_3_link',
+            'wrist_2_link',
+        ]
     else:
         raise NotImplementedError(f"Gripper type {gripper_name} not supported")
 

@@ -383,7 +383,7 @@ def launch_setup(context, *args, **kwargs):
             'workspace_bounds_name': setup,
             'tool_frame': 'gripper_frame',
             'urdf_file_path': urdf_file_path,
-            'enable_object_attachment': 'False', # TODO: should be True
+            'enable_object_attachment': 'True', # TODO: should be True
             'trigger_aabb_object_clearing': 'True'
         }.items(),
     )
@@ -530,7 +530,7 @@ def launch_setup(context, *args, **kwargs):
         get_package_share_directory('isaac_manipulator_pick_and_place') +
         '/config/' + gripper_type.perform(context) + '_grasps_' + object_folder_name + '.yaml'
     )
-    """
+    
     gripper_collision_links = get_gripper_collision_links(GripperType(
         gripper_type.perform(context)))
     mesh_uri = f'package://isaac_manipulator_pick_and_place/'\
@@ -555,7 +555,7 @@ def launch_setup(context, *args, **kwargs):
                      }],
         output='screen',
     )
-    """
+    
     manipulation_container = ComposableNodeContainer(
         name=constants.MANIPULATOR_CONTAINER_NAME,
         namespace='',
@@ -588,26 +588,25 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_start = [
         manipulation_container,
-        # nvblox_launch,
-        # cumotion_launch,
+        nvblox_launch,
+        cumotion_launch,
         realsense_launch,
-        # static_transform_launch,
+        static_transform_launch,
         resize_depth_node,
         yolov8_launch,
         foundationpose_launch,
         rviz_node,
-        # ur_control_node,
-        # controller_stopper_node,
-        # urscript_interface,
-        # robot_state_publisher_node,
-        # initial_joint_controller_spawner_started,
-        # move_group_node,
+        ur_control_node,
+        controller_stopper_node,
+        urscript_interface,
+        robot_state_publisher_node,
+        initial_joint_controller_spawner_started,
+        move_group_node,
         object_detection_server_launch,
         foundation_pose_server_launch,
         objectinfo_server_launch,
-        # pick_and_place_orchestrator_node,
-    ] 
-    # + controller_spawners
+        pick_and_place_orchestrator_node,
+    ] + controller_spawners
 
     return nodes_to_start
 

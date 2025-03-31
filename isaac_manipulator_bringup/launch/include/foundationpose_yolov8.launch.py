@@ -59,7 +59,6 @@ def launch_setup(context, *args, **kwargs):
             'foundation_pose_server_depth_topic_name',
             default='/camera_1/aligned_depth_to_color/image_raw')))
 
-    sensor_data_config = 'SENSOR_DATA'
     crop_input_qos = 'SENSOR_DATA'
     if camera_type is CameraType.realsense:
         depth_image_topic = realsense_depth_image_topic + '_metric'
@@ -107,7 +106,7 @@ def launch_setup(context, *args, **kwargs):
             'crop_width': 640,   # Add crop width
             'crop_height': int(rgb_image_height*640/rgb_image_width), # Add crop height
             'crop_mode': 'CENTER',           # Add crop mode (adjust as needed)
-            # 'input_qos': crop_input_qos,
+            'input_qos': crop_input_qos,
             # 'output_qos': 'DEFAULT',
         }],
         remappings=[
@@ -123,7 +122,7 @@ def launch_setup(context, *args, **kwargs):
         package='isaac_ros_depth_image_proc',
         plugin='nvidia::isaac_ros::depth_image_proc::ConvertMetricNode',
         parameters=[
-            # {'input_qos': sensor_data_config}
+            {'input_qos': crop_input_qos}
         ],
         remappings=[
             ('image_raw', realsense_depth_image_topic),
@@ -136,9 +135,9 @@ def launch_setup(context, *args, **kwargs):
         package='isaac_ros_foundationpose',
         plugin='nvidia::isaac_ros::foundationpose::FoundationPoseNode',
         parameters=[{
-            # 'depth_qos': sensor_data_config,
-            # 'color_qos': sensor_data_config,
-            # 'color_info_qos': sensor_data_config,
+            'depth_qos': crop_input_qos,
+            'color_qos': crop_input_qos,
+            'color_info_qos': crop_input_qos,
             'segmentation_qos': 'DEFAULT',
 
             'mesh_file_path': mesh_file_path,

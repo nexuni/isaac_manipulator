@@ -36,6 +36,7 @@ class IsaacSimCameraConfig:
 class GripperType(enum.Enum):
     ROBOTIQ_2F_140 = 'robotiq_2f_140'
     ROBOTIQ_2F_85 = 'robotiq_2f_85'
+    ROBOTIQ_HANDE = 'robotiq_hande'
 
 
 class EnumMeta(enum.EnumMeta):
