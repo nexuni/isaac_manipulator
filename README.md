@@ -227,7 +227,7 @@ ros2 launch isaac_manipulator_pick_and_place object_detection_stream.launch.py s
 
 * Noted: the `child-frame-id` of the calibration launch file should be `camera_1_link`.
 * This is what it looks like if everything works fine.
-    ![](./docs/imgs/object_detection_test_result_demo.png)
+    ![](./docs/imgs/object_detection_test_result_demo.jpeg)
 * The red box is the estimated pose of the object, which should match the real one in the camera.
 
 ## Grasp File
