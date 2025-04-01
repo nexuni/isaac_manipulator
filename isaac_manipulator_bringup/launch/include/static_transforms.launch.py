@@ -35,8 +35,8 @@ calibrations_dict = {
         'world_to_realsense_1': {
             'parent_frame': 'world',
             'child_frame': 'camera_1_link',
-            'translation': [0.0590073, 1.56122, 0.745002],
-            'rotation': [0.17472, 0.184359, -0.723358, 0.642058],  # [qx, qy ,qz, qw]
+            'translation': [0.0389337, 1.43416, 0.735497],
+            'rotation': [0.129891, 0.154824, -0.715998, 0.668211],  # [qx, qy ,qz, qw]
         },
         'world_to_realsense_2': {
             'parent_frame': 'world',

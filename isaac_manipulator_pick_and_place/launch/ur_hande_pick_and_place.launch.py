@@ -633,7 +633,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'object_attachment_scale',
             description='Object attachment scale of object / cube',
-            default_value='[0.09, 0.185, 0.035]',
+            default_value='[0.19, 0.090, 0.100]',
         )
     )
     declared_arguments.append(

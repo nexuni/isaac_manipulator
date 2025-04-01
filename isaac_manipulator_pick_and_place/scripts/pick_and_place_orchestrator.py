@@ -61,8 +61,8 @@ class PickAndPlaceOrchestrator(Node):
         self.declare_parameter('num_planner_tries', 5)
         self.declare_parameter('attach_object_fallback_radius', 0.15)
         self.declare_parameter('grasp_file_path', '')
-        self.declare_parameter('grasp_approach_offset_distance', [0.0, 0.0, -0.15])
-        self.declare_parameter('retract_offset_distance', [0.0, 0.0, 0.15])
+        self.declare_parameter('grasp_approach_offset_distance', [0.0, 0.0, -0.157])
+        self.declare_parameter('retract_offset_distance', [0.0, 0.0, 0.157])
         self.declare_parameter('attach_object_shape', str(ObjectAttachmentShape.CUBOID.value))
         self.declare_parameter('attach_object_mesh_file_path', '')
         self.declare_parameter('attach_object_scale', [0.05, 0.05, 0.1])
@@ -564,12 +564,12 @@ class PickAndPlaceOrchestrator(Node):
 
         self._gripper_done_event.set()
 
-    def close_gripper(self, position: float = 0.65, max_effort: float = 10.0) -> bool:
+    def close_gripper(self, position: float = 0.0, max_effort: float = 1.0) -> bool:
         """Close gripper by triggering an action call.
 
         Args:
-            position (float, optional): Position. Defaults to 0.65.
-            max_effort (float, optional): Max effort. Defaults to 10.0.
+            position (float, optional): Position. Defaults to 0.0.
+            max_effort (float, optional): Max effort. Defaults to 1.0.
         Returns:
             bool: bool: Status of whether gripper closed successfully or not
         """
@@ -583,12 +583,12 @@ class PickAndPlaceOrchestrator(Node):
 
         return True
 
-    def open_gripper(self, position: float = 0.0, max_effort: float = 10.0) -> bool:
+    def open_gripper(self, position: float = 0.025, max_effort: float = 1.0) -> bool:
         """Open gripper by triggering an action call.
 
         Args:
-            position (float, optional): Position. Defaults to 0.65.
-            max_effort (float, optional): Max effort. Defaults to 10.0.
+            position (float, optional): Position. Defaults to 0.025.
+            max_effort (float, optional): Max effort. Defaults to 1.0.
         Returns:
             bool: bool: Status of whether gripper opened successfully or not
         """
