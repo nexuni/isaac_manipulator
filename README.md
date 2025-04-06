@@ -50,6 +50,7 @@ To complete the task of pick and place with robotiq hande gripper. We forked som
 
 * [isaac_manipulator](https://github.com/nexuni/isaac_manipulator/tree/hande-dev)
 * [ros2_robotiq_gripper](https://github.com/nexuni/ros2_robotiq_gripper/tree/hande-dev)
+* [robotiq_hande_description](https://github.com/nexuni/robotiq_hande_description/tree/linga-dev)
 * Skip the part regarding `rt-detr`, we use `yolov8` here. For details, refer to [Models Setup](#models-setup).
 
 ### ROS2 Package Build and Install
@@ -288,3 +289,12 @@ After all the preparation are completed, we could start the pick-and-place.
     * The `kinematics_parameters_file` is from the [robot calibration](https://docs.ros.org/en/humble/p/ur_robot_driver/doc/installation/robot_setup.html#extract-calibration-information).
     * The setup name is the name you defined in the `isaac_manipulator_bringup/launch/static_transforms.launch.py`. [Step 6 in Description](https://nvidia-isaac-ros.github.io/reference_workflows/isaac_manipulator/tutorials/tutorial_e2e.html#set-up-cameras-for-robot). **Must use the same name as the[Work Boundary File](#setup-a-work-boundary-file).**
 
+3. Send the first action command to trigger the yolov8 detection
+    ```bash
+    ros2 action send_goal /get_objects isaac_manipulator_interfaces/action/GetObjects {}
+    ```
+
+4. Send a command to trigger the rest of the pipeline, including foundation pose, grasp pose estimation, planning, gripper controlling.
+    ```bash
+    ros2 action send_goal /pick_and_place isaac_manipulator_interfaces/action/PickAndPlace "{object_id : <TARGET OBJECT ID>}"
+    ```
