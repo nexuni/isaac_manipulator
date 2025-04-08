@@ -169,6 +169,8 @@ class PickAndPlaceOrchestrator(Node):
 
         self.get_logger().info('Pick and Place Orchestrator has been started.')
 
+        self.init_pose = None
+
     def initialize_marker(self, future):
         self._end_effector_marker = EndEffectorMarker(
                 node=self, marker_namespace='end_effector_marker',
@@ -651,6 +653,28 @@ class PickAndPlaceOrchestrator(Node):
         self.get_logger().info('Executing goal...')
         result = PickAndPlace.Result()
 
+        place_pose = None
+        if self._use_pose_from_rviz:
+            place_pose = self._end_effector_marker.get_pose()
+        else:
+            place_pose = goal_handle.request.place_pose
+        # Publish on Rviz for debugging where the robot will place the object
+
+        self.publish_grasp_transform(place_pose, 'place_pose')
+
+        transform = self._tf_buffer.lookup_transform(
+            'base_link', 'gripper_frame', rclpy.time.Time())
+        self.init_pose = Pose()
+        self.init_pose.position.x = transform.transform.translation.x
+        self.init_pose.position.y = transform.transform.translation.y
+        self.init_pose.position.z = transform.transform.translation.z
+        self.init_pose.orientation.w = transform.transform.rotation.w
+        self.init_pose.orientation.x = transform.transform.rotation.x
+        self.init_pose.orientation.y = transform.transform.rotation.y
+        self.init_pose.orientation.z = transform.transform.rotation.z
+
+        self.publish_grasp_transform(self.init_pose, 'init_pose')
+
         # Wait for the get_object_pose action server to be available, do not wait if we use ground
         # truth pose in sim
         if not self._use_ground_truth_pose_from_sim:
@@ -721,7 +745,7 @@ class PickAndPlaceOrchestrator(Node):
                 if not pick_success:
                     time.sleep(self._sleep_time_before_planner_tries_sec)
                     continue
-                if not self.close_gripper():
+                if not self.close_gripper(position=0.015):
                     result.success = False
                     goal_handle.abort()
                     return result
@@ -789,6 +813,7 @@ class PickAndPlaceOrchestrator(Node):
                 if not place_success:
                     time.sleep(self._sleep_time_before_planner_tries_sec)
                     continue
+                time.sleep(2)
                 if not self.open_gripper():
                     result.success = False
                     goal_handle.abort()
@@ -811,6 +836,38 @@ class PickAndPlaceOrchestrator(Node):
         self._object_attach_done_event.wait()
         if not self._object_attach_done_result:
             self.get_logger().error('Failed to detach object.')
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        # Back to init pose 
+        self.get_logger().info('Back to init pose')
+        back_init_success = False
+        for i in range(self._num_planner_tries_):
+            if goal_handle.status == GoalStatus.STATUS_CANCELING or \
+               goal_handle.status == GoalStatus.STATUS_CANCELED:
+                self.get_logger().warn('Received request to cancel goal...')
+                result.success = False
+                goal_handle.abort()
+                return result
+            self.get_logger().info(
+                f'Executing back pose {i+1} / {self._num_planner_tries_} after '
+                f'{self._sleep_time_before_planner_tries_sec} second pause')
+            if self.get_plan_pose(self.init_pose):
+                # Executing grasp trajectory
+                back_init_success, _ = self._planner.execute_plan(
+                    self.plan_result.planned_trajectory[0])
+                if not back_init_success:
+                    time.sleep(self._sleep_time_before_planner_tries_sec)
+                    continue
+                back_init_success = True
+                break
+            else:
+                self.get_logger().error('Planning for back phase failed, trying again')
+            time.sleep(self._sleep_time_before_planner_tries_sec)
+
+        if not back_init_success:
+            self.get_logger().error('Planning for back phase failed.')
             result.success = False
             goal_handle.abort()
             return result
