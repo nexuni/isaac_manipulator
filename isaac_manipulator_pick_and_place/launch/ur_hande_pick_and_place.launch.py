@@ -456,6 +456,22 @@ def launch_setup(context, *args, **kwargs):
         }.items()
     )
 
+    yolov8_visualizer_node = Node(
+        name='yolov8_visualizer_node',
+        package='isaac_manipulator_pick_and_place',
+        executable='yolov8_visualizer.py',
+        parameters=[{
+            'input_image_qos': 'DEFAULT',
+            'input_bbox_qos': 'DEFAULT',
+            'output_qos': 'SENSOR_DATA',
+        }],
+        remappings=[
+            ('/camera/image_raw', '/yolov8_encoder/crop/image'),
+            ('/yolo_detections', yolov8_detections_topic),
+            # ('/yolov8/image_with_boxes', fp_in_img_topic_name), # output topic
+        ],
+    )
+
     if int(yolov8_object_class_id) not in labels_config["yolov8"]["labels"]:
         raise NotImplementedError('Object Class Id is not supported')
 
@@ -594,6 +610,7 @@ def launch_setup(context, *args, **kwargs):
         static_transform_launch,
         resize_depth_node,
         yolov8_launch,
+        yolov8_visualizer_node,
         foundationpose_launch,
         rviz_node,
         ur_control_node,

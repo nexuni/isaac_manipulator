@@ -35,6 +35,7 @@ install(PROGRAMS
   scripts/grasp_reader.py
   scripts/end_effector_marker.py
   scripts/mono16_resize_node.py
+  scripts/yolov8_visualizer.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
