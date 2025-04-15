@@ -86,7 +86,7 @@ The following setups are necessary to control the robot and the gripper via ros2
 2. Follow the description on [web](https://nvidia-isaac-ros.github.io/reference_workflows/isaac_manipulator/tutorials/tutorial_e2e.html#set-up-ur-robot) to setup the `external_control` program with the `urcap` downloaded in step 1.
 3. Everytime using the robot, you should follow the steps to activate the gripper:
     1. Go to `tool_io/io_interface_control` page on the UR teach pendant, set to `gripper`.
-    2. Go to `urcaps/gripper` page, actuvate the gripper.
+    2. Go to `urcaps/gripper` page, activate the gripper.
     3. Back to `tool_io/io_interface_control` page, change the value to `user`.
 4. Create the virtual comport for controlling the gripper on your computer. The comport `/tmp/ttyUR` is created with the command:
 
