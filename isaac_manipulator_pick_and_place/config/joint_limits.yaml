@@ -12,11 +12,11 @@ joint_limits:
     has_acceleration_limits: false
     has_position_limits: true
     has_velocity_limits: true
-    max_position: 6.283185307179586
-    # max_position: 0.0
+    # max_position: 6.283185307179586
+    max_position: 0.0
     max_velocity: 2.0943951023931953
-    min_position: -6.283185307179586
-    # min_position: -3.141592653589793
+    # min_position: -6.283185307179586
+    min_position: -3.141592653589793
   shoulder_lift_joint:
     has_acceleration_limits: false
     has_position_limits: true

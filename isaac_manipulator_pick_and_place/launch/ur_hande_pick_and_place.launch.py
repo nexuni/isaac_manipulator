@@ -463,7 +463,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{
             'input_image_qos': 'DEFAULT',
             'input_bbox_qos': 'DEFAULT',
-            'output_qos': 'SENSOR_DATA',
+            'output_qos': 'DEFAULT',
         }],
         remappings=[
             ('/camera/image_raw', '/yolov8_encoder/crop/image'),
