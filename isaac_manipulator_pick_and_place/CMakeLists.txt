@@ -36,6 +36,7 @@ install(PROGRAMS
   scripts/end_effector_marker.py
   scripts/mono16_resize_node.py
   scripts/yolov8_visualizer.py
+  scripts/pick_and_place_executor.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

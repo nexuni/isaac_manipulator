@@ -20,6 +20,7 @@
 import math
 import time
 from threading import Event
+import copy
 
 from action_msgs.msg import GoalStatus
 from control_msgs.action import GripperCommand
@@ -170,6 +171,8 @@ class PickAndPlaceOrchestrator(Node):
         self.get_logger().info('Pick and Place Orchestrator has been started.')
 
         self.init_pose = None
+
+        self.call_index = 0
 
     def initialize_marker(self, future):
         self._end_effector_marker = EndEffectorMarker(
@@ -643,6 +646,275 @@ class PickAndPlaceOrchestrator(Node):
 
     def execute_callback(self, goal_handle) -> PickAndPlace.Result:
         """Execute the action call functionality
+
+        This is the logic which pick from A and place at B iteratively.
+        Both Pick and Place use self.get_plan_grasp()
+
+        Args:
+            goal_handle (_type_): Goal handle
+
+        Returns:
+            _type_: _description_
+        """
+        self.get_logger().info('Executing goal...')
+        result = PickAndPlace.Result()
+
+        # Define poseA and poseB
+        poses_arr_A = PoseArray()
+        poses_arr_A.header.frame_id = 'base_link'
+        poseA = Pose()
+        poseA.position.x = 0.146
+        poseA.position.y = 0.638
+        poseA.position.z = 0.283
+        poseA.orientation.w = 0.000
+        poseA.orientation.x = 0.999
+        poseA.orientation.y = 0.032
+        poseA.orientation.z = -0.001
+        # self.publish_grasp_transform(poseA, 'pose_A')
+        poses_arr_A.poses.append(poseA)
+
+
+        poses_arr_B = PoseArray()
+        poses_arr_B.header.frame_id = 'base_link'
+        poseB = Pose()
+        poseB.position.x = -0.230
+        poseB.position.y = 0.447
+        poseB.position.z = 0.282
+        poseB.orientation.w = 0.000
+        poseB.orientation.x = 0.999
+        poseB.orientation.y = 0.032
+        poseB.orientation.z = -0.000
+        # self.publish_grasp_transform(poseB, 'pose_B')
+        poses_arr_B.poses.append(poseB)
+
+        self.call_index += 1
+        self.call_index %= 100
+        target_place_pose = None
+        if self.call_index % 2 == 1:
+            # target_place_pose = poses_arr_A
+            target_place_pose = poseA
+            self.get_logger().error('Go to PoseA...')
+        else:
+            # target_place_pose = poses_arr_B
+            target_place_pose = poseB
+            self.get_logger().error('Go to PoseB...')
+
+
+        # Wait for the get_object_pose action server to be available, do not wait if we use ground
+        # truth pose in sim
+        if not self._use_ground_truth_pose_from_sim:
+            if not self.wait_for_server(self._get_object_pose_client):
+                result.success = False
+                goal_handle.abort()
+                return result
+
+        # Wait for the object attachment/detachment action server to be available
+        if not self.wait_for_server(self._object_attach_client):
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        # Wait for the gripper action server to be available
+        if not self.wait_for_server(self._gripper_client):
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        # Trigger the get object pose action if sim ground truth is not enabled
+        if not self._use_ground_truth_pose_from_sim:
+            self.trigger_get_object_pose(goal_handle)
+            # Wait for action to be done
+            self._get_pose_done_event.wait()
+            if self._get_pose_done_result is None:
+                self.get_logger().error('Failed to get object pose.')
+                result.success = False
+                goal_handle.abort()
+                return result
+
+        # Trigger the planning for pick phase
+        self.get_logger().info('Starting orchestrator for pick and place')
+        pick_success = False
+        plan_only_retraction = False
+
+        # Open gripper to set it in the right configuration for upcoming task
+        if not self.open_gripper():
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        for i in range(self._num_planner_tries_):
+            if goal_handle.status == GoalStatus.STATUS_CANCELING or \
+               goal_handle.status == GoalStatus.STATUS_CANCELED:
+                self.get_logger().warn('Received request to cancel goal...')
+                result.success = False
+                goal_handle.abort()
+                return result
+            self.get_logger().info(f'Executing pick pose {i+1} / {self._num_planner_tries_}')
+            if self.get_plan_grasp(self.read_grasp_poses()):
+                # Executing grasp trajectory
+                self.get_logger().info('Found trajectories.')
+
+                if plan_only_retraction:
+                    self.get_logger().info('Re-executing retraction plan')
+                    pick_success, _ = self._planner.execute_plan(
+                        self.plan_result.planned_trajectory[1])
+                    if not pick_success:
+                        plan_only_retraction = True
+                        time.sleep(self._sleep_time_before_planner_tries_sec)
+                        continue
+                    pick_success = True
+                    break
+
+                pick_success, _ = self._planner.execute_plan(
+                    self.plan_result.planned_trajectory[0])
+                if not pick_success:
+                    time.sleep(self._sleep_time_before_planner_tries_sec)
+                    continue
+                if not self.close_gripper(position=0.015):
+                    result.success = False
+                    goal_handle.abort()
+                    return result
+                # Executing lift trajectory
+                self.get_logger().info('Executing plan')
+                pick_success, _ = self._planner.execute_plan(
+                    self.plan_result.planned_trajectory[1])
+                if not pick_success:
+                    plan_only_retraction = True
+                    time.sleep(self._sleep_time_before_planner_tries_sec)
+                    continue
+                pick_success = True
+                break
+            else:
+                self.get_logger().error('Planning for pick phase failed, trying again')
+            self.get_logger().info(
+                f'Waiting for {self._sleep_time_before_planner_tries_sec} seconds')
+            time.sleep(self._sleep_time_before_planner_tries_sec)
+
+        if not pick_success:
+            self.get_logger().error('Planning for pick phase failed.')
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        # Attach object
+        self.get_logger().info('Triggering object attachment')
+        self.trigger_object_attach(do_attach=True)
+
+        # Wait for action to be done
+        self._object_attach_done_event.wait()
+        if not self._object_attach_done_result:
+            self.get_logger().error('Failed to attach object.')
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        # Clearing the result for the next action (detach object)
+        self._object_attach_done_result = False
+        
+        # Trigger the planning for drop phase
+        self.get_logger().info('Getting place pose')
+        place_pose = target_place_pose
+        
+        # Publish on Rviz for debugging where the robot will place the object
+        self.publish_grasp_transform(place_pose, 'place_pose')
+        place_success = False
+        for i in range(self._num_planner_tries_):
+            if goal_handle.status == GoalStatus.STATUS_CANCELING or \
+               goal_handle.status == GoalStatus.STATUS_CANCELED:
+                self.get_logger().warn('Received request to cancel goal...')
+                result.success = False
+                goal_handle.abort()
+                return result
+            self.get_logger().info(
+                f'Executing place pose {i+1} / {self._num_planner_tries_} after '
+                f'{self._sleep_time_before_planner_tries_sec} second pause')
+            if self.get_plan_pose(place_pose):
+                # Executing grasp trajectory
+                place_success, _ = self._planner.execute_plan(
+                    self.plan_result.planned_trajectory[0])
+                if not place_success:
+                    time.sleep(self._sleep_time_before_planner_tries_sec)
+                    continue
+                time.sleep(2)
+                if not self.open_gripper():
+                    result.success = False
+                    goal_handle.abort()
+                    return result
+                place_success = True
+                break
+            else:
+                self.get_logger().error('Planning for drop phase failed, trying again')
+            time.sleep(self._sleep_time_before_planner_tries_sec)
+
+        if not place_success:
+            self.get_logger().error('Planning for drop phase failed.')
+            result.success = False
+            goal_handle.abort()
+            return result
+        # Detach object
+        self.get_logger().info('Triggering object detachment')
+        self.trigger_object_attach(do_attach=False)
+        # Wait for action to be done
+        self._object_attach_done_event.wait()
+        if not self._object_attach_done_result:
+            self.get_logger().error('Failed to detach object.')
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        # Back to init pose 
+        self.get_logger().info('Back to init pose')
+        back_init_success = False
+        init_pose = copy.deepcopy(target_place_pose)
+        init_pose.position.z += 0.10
+        for i in range(self._num_planner_tries_):
+            if goal_handle.status == GoalStatus.STATUS_CANCELING or \
+               goal_handle.status == GoalStatus.STATUS_CANCELED:
+                self.get_logger().warn('Received request to cancel goal...')
+                result.success = False
+                goal_handle.abort()
+                return result
+            self.get_logger().info(
+                f'Executing back pose {i+1} / {self._num_planner_tries_} after '
+                f'{self._sleep_time_before_planner_tries_sec} second pause')
+            if self.get_plan_pose(init_pose):
+                # Executing grasp trajectory
+                back_init_success, _ = self._planner.execute_plan(
+                    self.plan_result.planned_trajectory[0])
+                if not back_init_success:
+                    time.sleep(self._sleep_time_before_planner_tries_sec)
+                    continue
+                back_init_success = True
+                break
+            else:
+                self.get_logger().error('Planning for back phase failed, trying again')
+            time.sleep(self._sleep_time_before_planner_tries_sec)
+
+        if not back_init_success:
+            self.get_logger().error('Planning for back phase failed.')
+            result.success = False
+            goal_handle.abort()
+            return result        
+
+        # Detach object
+        self.get_logger().info('Triggering object detachment')
+        self.trigger_object_attach(do_attach=False)
+        # Wait for action to be done
+        self._object_attach_done_event.wait()
+        if not self._object_attach_done_result:
+            self.get_logger().error('Failed to detach object.')
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        goal_handle.succeed()
+        result.success = True
+        return result
+
+    def execute_callback_not_iterable(self, goal_handle) -> PickAndPlace.Result:
+        """Execute the action call functionality
+
+        This is the logic which pick and place only once. Robot will move back to the init pose.
 
         Args:
             goal_handle (_type_): Goal handle

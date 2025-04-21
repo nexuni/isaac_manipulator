@@ -372,7 +372,7 @@ def launch_setup(context, *args, **kwargs):
             'voxel_size': voxel_size,
             'read_esdf_world': str(enable_nvblox),
             'publish_curobo_world_as_voxels': str(enable_nvblox),
-            'distance_threshold': '0.07',#'0.05',
+            'distance_threshold': '0.05',#'0.05',
             'joint_states_topic': '/joint_states',
             'time_sync_slop': time_sync_slop,
             'filter_depth_buffer_time': filter_depth_buffer_time,

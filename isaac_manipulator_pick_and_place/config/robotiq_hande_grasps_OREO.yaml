@@ -13,12 +13,12 @@ grasps:
     "grasp_1":
       position: [-0.21466, 0.01932, -0.0]
       orientation: {w:  0.70711, xyz: [0.0, 0.70711, 0.0]}
-    "grasp_2":
-      position: [0.0, 0.028, 0.179]
-      orientation: {w:  0.0, xyz: [0.0, 1.0, 0.0]}
-    "grasp_3":
-      position: [0.0, 0.025, -0.179]
-      orientation: {w:  0.0, xyz: [0.0, 0.0, 1.0]}
+    # "grasp_2":
+    #   position: [0.0, 0.028, 0.179]
+    #   orientation: {w:  0.0, xyz: [0.0, 1.0, 0.0]}
+    # "grasp_3":
+    #   position: [0.0, 0.025, -0.179]
+    #   orientation: {w:  0.0, xyz: [0.0, 0.0, 1.0]}
     # "grasp_4": # Same position as grasp_3
     #   position: [0.0, 0.025, -0.179]
     #   orientation: {w:  1.0, xyz: [0.0, 0.0, 0.0]}
