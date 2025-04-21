@@ -298,3 +298,9 @@ After all the preparation are completed, we could start the pick-and-place.
     ```bash
     ros2 action send_goal /pick_and_place isaac_manipulator_interfaces/action/PickAndPlace "{object_id : <TARGET OBJECT ID>}"
     ```
+
+    or 
+
+    ```bash
+    ros2 action send_goal /pick_and_place isaac_manipulator_interfaces/action/PickAndPlace "{object_id: 0, place_pose: {position: {x: 0.239, y: 0.659, z: 0.368}, orientation: {x: 0.550, y: 0.519, z: 0.477, w: 0.448}}}"
+    ```
