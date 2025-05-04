@@ -1,0 +1,12 @@
+format: isaac_grasp
+format_version: 1.0
+
+object_frame: /centered
+gripper_frame: /robotiq_hande_coupler
+
+
+# Only grasps/**/position and grasps/**/orientation are necessary
+grasps:
+    "grasp_0":
+      position: [-0.02, 0.170, 0.02]
+      orientation: {w:  0.5, xyz: [0.5, 0.5, -0.5]}

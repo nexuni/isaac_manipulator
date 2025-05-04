@@ -133,7 +133,8 @@ class PickAndPlaceOrchestrator(Node):
 
         self._action_server = ActionServer(
             self, PickAndPlace, '/pick_and_place',
-            execute_callback=self.execute_callback, cancel_callback=self.cancel_callback,)
+            # execute_callback=self.execute_callback, cancel_callback=self.cancel_callback,)
+            execute_callback=self.execute_callback_repeat, cancel_callback=self.cancel_callback,)
         self._get_object_pose_cb_group = MutuallyExclusiveCallbackGroup()
         self._get_object_pose_client = ActionClient(
             self, GetObjectPose, '/get_object_pose', callback_group=self._get_object_pose_cb_group)
@@ -260,11 +261,13 @@ class PickAndPlaceOrchestrator(Node):
         poses_arr = PoseArray()
         try:
             # Get the grasp pose
+            time.sleep(1)
             grasp_poses = self._grasp_reader.get_pose_for_pick_task(
                 world_frame='base_link',
                 object_frame_name=self._object_frame_name,
                 tf_buffer=self._tf_buffer,
             )
+            self.get_logger().info(f'grasp_poses from _grasp_reader: {grasp_poses}')
 
             for i, grasp_pose in enumerate(grasp_poses):
                 if self._publish_grasp_frame:
@@ -644,7 +647,7 @@ class PickAndPlaceOrchestrator(Node):
         self._client_goal_handles.clear()
         return CancelResponse.ACCEPT
 
-    def execute_callback(self, goal_handle) -> PickAndPlace.Result:
+    def execute_callback_repeat(self, goal_handle) -> PickAndPlace.Result:
         """Execute the action call functionality
 
         This is the logic which pick from A and place at B iteratively.
@@ -730,6 +733,7 @@ class PickAndPlaceOrchestrator(Node):
                 result.success = False
                 goal_handle.abort()
                 return result
+            # TODO: publish tf of target object by ourselves
 
         # Trigger the planning for pick phase
         self.get_logger().info('Starting orchestrator for pick and place')
@@ -911,7 +915,7 @@ class PickAndPlaceOrchestrator(Node):
         result.success = True
         return result
 
-    def execute_callback_not_iterable(self, goal_handle) -> PickAndPlace.Result:
+    def execute_callback(self, goal_handle) -> PickAndPlace.Result:
         """Execute the action call functionality
 
         This is the logic which pick and place only once. Robot will move back to the init pose.
@@ -1017,6 +1021,9 @@ class PickAndPlaceOrchestrator(Node):
                 if not pick_success:
                     time.sleep(self._sleep_time_before_planner_tries_sec)
                     continue
+                
+                time.sleep(2)
+                grasp_pose = self._tf_buffer.lookup_transform('base_link', 'gripper_frame', rclpy.time.Time())
                 if not self.close_gripper(position=0.015):
                     result.success = False
                     goal_handle.abort()
@@ -1059,6 +1066,7 @@ class PickAndPlaceOrchestrator(Node):
         self._object_attach_done_result = False
 
         # Trigger the planning for drop phase
+        time.sleep(1)
         self.get_logger().info('Getting place pose')
         place_pose = None
         if self._use_pose_from_rviz:
@@ -1113,6 +1121,7 @@ class PickAndPlaceOrchestrator(Node):
             return result
 
         # Back to init pose 
+        time.sleep(1)
         self.get_logger().info('Back to init pose')
         back_init_success = False
         for i in range(self._num_planner_tries_):

@@ -11,6 +11,9 @@ string class_id
 ---
 # Result
 
+# Header
+std_msgs/Header header
+
 # Pose of the object
 geometry_msgs/Pose object_pose
 
