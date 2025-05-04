@@ -69,8 +69,11 @@ def add_cumotion(args: lu.ArgumentContainer) -> List[Action]:
     # a single RealSense camera is used with a shiny robot (e.g., UR e-Series) in view.
     # For that case, setting max_filtered_speckles_size to 1250 was found to work well
     # empirically.
-    filter_speckles_in_robot_mask = False
-    max_filtered_speckles_size = 0
+    # filter_speckles_in_robot_mask = False
+    # max_filtered_speckles_size = 0
+
+    filter_speckles_in_robot_mask = True
+    max_filtered_speckles_size = 1250
 
     # Get topics to publish
     robot_mask_publish_topics = []
@@ -118,6 +121,10 @@ def add_cumotion(args: lu.ArgumentContainer) -> List[Action]:
                     'cumotion_planner.update_link_sphere_server':
                         args.update_link_sphere_server_planner,
                     'cumotion_planner.urdf_path': args.urdf_file_path,
+                    'cumotion_planner.max_attempts': '10', # 10
+                    'cumotion_planner.num_graph_seeds': '12', # 6
+                    'cumotion_planner.num_trajopt_seeds': '12', # 6
+                    'cumotion_planner.num_trajopt_time_steps': '32', # 32
                 },
             ))
     else:
