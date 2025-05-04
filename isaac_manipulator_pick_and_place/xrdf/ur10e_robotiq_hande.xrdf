@@ -165,16 +165,18 @@ geometry:
           radius: 0.064
         - center: [-0.322, -0.001, 0.177]
           radius: 0.064
-        - center: [-0.368, -0.0, 0.176]
+        - center: [-0.368, 0.0, 0.176]
           radius: 0.064
-        - center: [-0.413, -0.0, 0.176]
+        - center: [-0.413, 0.0, 0.176]
           radius: 0.064
-        - center: [-0.459, -0.0, 0.176]
+        - center: [-0.459, 0.0, 0.176]
           radius: 0.064
-        - center: [-0.504, -0.0, 0.176]
+        - center: [-0.504, 0.0, 0.176]
           radius: 0.064
         - center: [-0.6, 0.0, 0.177]
           radius: 0.08
+        - center: [-0.006, -0.003, 0.21]
+          radius: 0.085
       forearm_link: 
         - center: [0.0, 0.005, 0.119]
           radius: 0.06
@@ -216,22 +218,44 @@ geometry:
           radius: 0.055
         - center: [-0.004, -0.011, -0.011]
           radius: 0.053
+        - center: [-0.0, -0.029, -0.005]
+          radius: 0.05
       wrist_3_link: 
-        - center: [-0.016, 0.002, -0.025]
+        - center: [-0.02, 0.001, -0.032]
           radius: 0.034
         - center: [0.016, -0.011, -0.024]
           radius: 0.034
         - center: [0.009, 0.018, -0.025]
           radius: 0.034
+        - center: [0.003, -0.033, -0.028]
+          radius: 0.025
+        - center: [-0.016, -0.019, -0.031]
+          radius: 0.03
+        - center: [-0.014, 0.022, -0.03]
+          radius: 0.03
+        - center: [0.032, 0.008, -0.025]
+          radius: 0.025
       robotiq_hande_link: 
-        - center: [-0.0, -0.005, -0.041]
+        - center: [0.0, -0.005, -0.041]
           radius: 0.035
         - center: [0.0, 0.003, 0.026]
           radius: 0.038
-        - center: [-0.0, -0.002, -0.02]
+        - center: [0.0, -0.002, -0.02]
           radius: 0.036
         - center: [0.0, 0.0, 0.003]
           radius: 0.037
+        - center: [-0.0, -0.005, -0.048]
+          radius: 0.038
+        - center: [0.003, 0.001, -0.045]
+          radius: 0.04
+        - center: [-0.007, 0.0, -0.046]
+          radius: 0.038
+        - center: [-0.011, -0.013, 0.031]
+          radius: 0.015
+        - center: [0.013, -0.018, 0.033]
+          radius: 0.02
+        - center: [0.004, -0.032, 0.032]
+          radius: 0.015
       robotiq_hande_left_finger: 
         - center: [0.001, 0.028, 0.041]
           radius: 0.0132
