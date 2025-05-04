@@ -234,6 +234,7 @@ void ObjectInfoServer::Execute<GetObjectPoseAction>(
           // Store the pose in the cache
           auto detection_3d = trigger_result->poses.detections[0];
           objects_[object_id].detection_3d = detection_3d;
+          result->header = trigger_result->poses.header;
           result->object_pose = detection_3d.results[0].pose.pose;
           goal_handle->succeed(result);
           return;
