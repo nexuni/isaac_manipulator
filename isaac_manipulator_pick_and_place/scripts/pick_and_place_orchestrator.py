@@ -195,6 +195,42 @@ class PickAndPlaceOrchestrator(Node):
 
         self.get_logger().info('End effector marker initialized.')
 
+    def publish_transform(self, pose: Transformation | Pose, 
+                                frame_name: str, child_frame_name: str):
+        """
+        Publishes a frame onto TF
+        """
+        if pose is None:
+            self.get_logger().error('[publish_transform] Pose should never be None')
+            return
+        
+
+        transform_stamped = TransformStamped()
+        transform_stamped.header = Header()
+        transform_stamped.header.stamp = self.get_clock().now().to_msg()
+        transform_stamped.header.frame_id = frame_name
+        transform_stamped.child_frame_id = child_frame_name
+
+        # Assign the position and orientation from the grasp pose
+        transform_stamped.transform.translation.x = pose.position.x
+        transform_stamped.transform.translation.y = pose.position.y
+        transform_stamped.transform.translation.z = pose.position.z
+
+        if not isinstance(pose, Pose):
+            transform_stamped.transform.rotation.x = pose.quaternion.x
+            transform_stamped.transform.rotation.y = pose.quaternion.y
+            transform_stamped.transform.rotation.z = pose.quaternion.z
+            transform_stamped.transform.rotation.w = pose.quaternion.w
+        else:
+            transform_stamped.transform.rotation.x = pose.orientation.x
+            transform_stamped.transform.rotation.y = pose.orientation.y
+            transform_stamped.transform.rotation.z = pose.orientation.z
+            transform_stamped.transform.rotation.w = pose.orientation.w
+
+        # Publish the transform
+        self._tf_broadcaster.sendTransform(transform_stamped)
+        self.get_logger().debug(f'Published frame from {transform_stamped.child_frame_id} to {transform_stamped.header.frame_id}')
+
     def publish_grasp_transform(self, grasp_pose: Transformation | Pose,
                                 frame_name: str = 'grasp_frame'):
         """Publishes the grasp frame onto TF to visualize where the robot is going to grasp onto
@@ -207,32 +243,9 @@ class PickAndPlaceOrchestrator(Node):
         if grasp_pose is None:
             self.get_logger().error('Grasp pose should never be None')
             return
+        
+        self.publish_transform(grasp_pose, 'world', frame_name)
 
-        transform_stamped = TransformStamped()
-        transform_stamped.header = Header()
-        transform_stamped.header.stamp = self.get_clock().now().to_msg()
-        transform_stamped.header.frame_id = 'world'
-        transform_stamped.child_frame_id = frame_name
-
-        # Assign the position and orientation from the grasp pose
-        transform_stamped.transform.translation.x = grasp_pose.position.x
-        transform_stamped.transform.translation.y = grasp_pose.position.y
-        transform_stamped.transform.translation.z = grasp_pose.position.z
-
-        if not isinstance(grasp_pose, Pose):
-            transform_stamped.transform.rotation.x = grasp_pose.quaternion.x
-            transform_stamped.transform.rotation.y = grasp_pose.quaternion.y
-            transform_stamped.transform.rotation.z = grasp_pose.quaternion.z
-            transform_stamped.transform.rotation.w = grasp_pose.quaternion.w
-        else:
-            transform_stamped.transform.rotation.x = grasp_pose.orientation.x
-            transform_stamped.transform.rotation.y = grasp_pose.orientation.y
-            transform_stamped.transform.rotation.z = grasp_pose.orientation.z
-            transform_stamped.transform.rotation.w = grasp_pose.orientation.w
-
-        # Publish the transform
-        self._tf_broadcaster.sendTransform(transform_stamped)
-        self.get_logger().debug(f'Published grasp frame: {transform_stamped.child_frame_id}')
 
     def wait_for_server(self, action_client: ActionClient, timeout_sec: float = 5.0) -> bool:
         """Wait for the action server to be available.
@@ -733,7 +746,12 @@ class PickAndPlaceOrchestrator(Node):
                 result.success = False
                 goal_handle.abort()
                 return result
-            # TODO: publish tf of target object by ourselves
+            else:
+                # publish tf of target object by ourselves
+                object_pose = self._get_pose_done_result.object_pose
+                frame_name = self._get_pose_done_result.header.frame_id
+                self.publish_transform(object_pose, frame_name, self._object_frame_name)
+                
 
         # Trigger the planning for pick phase
         self.get_logger().info('Starting orchestrator for pick and place')
