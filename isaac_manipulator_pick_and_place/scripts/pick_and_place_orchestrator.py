@@ -707,12 +707,12 @@ class PickAndPlaceOrchestrator(Node):
         self.call_index %= 100
         target_place_pose = None
         if self.call_index % 2 == 1:
-            # target_place_pose = poses_arr_A
-            target_place_pose = poseA
+            target_place_pose = poses_arr_A
+            # target_place_pose = poseA
             self.get_logger().error('Go to PoseA...')
         else:
-            # target_place_pose = poses_arr_B
-            target_place_pose = poseB
+            target_place_pose = poses_arr_B
+            # target_place_pose = poseB
             self.get_logger().error('Go to PoseB...')
 
 
@@ -835,8 +835,80 @@ class PickAndPlaceOrchestrator(Node):
         
         # Trigger the planning for drop phase
         self.get_logger().info('Getting place pose')
-        place_pose = target_place_pose
-        
+        place_pose = target_place_pose.poses[0]
+
+        # Publish on Rviz for debugging where the robot will place the object
+        self.publish_grasp_transform(place_pose, 'place_pose')
+        place_success = False
+
+        # Go to place pose with move_grasp for attach and retract
+        for i in range(self._num_planner_tries_):
+            if goal_handle.status == GoalStatus.STATUS_CANCELING or \
+               goal_handle.status == GoalStatus.STATUS_CANCELED:
+                self.get_logger().warn('Received request to cancel goal...')
+                result.success = False
+                goal_handle.abort()
+                return result
+            self.get_logger().info(f'Executing place pose {i+1} / {self._num_planner_tries_}')
+            if self.get_plan_grasp(target_place_pose):
+                # Executing grasp trajectory
+                self.get_logger().info('Found trajectories.')
+
+                if plan_only_retraction:
+                    self.get_logger().info('Re-executing retraction plan')
+                    place_success, _ = self._planner.execute_plan(
+                        self.plan_result.planned_trajectory[1])
+                    if not place_success:
+                        plan_only_retraction = True
+                        time.sleep(self._sleep_time_before_planner_tries_sec)
+                        continue
+                    place_success = True
+                    break
+
+                place_success, _ = self._planner.execute_plan(
+                    self.plan_result.planned_trajectory[0])
+                if not place_success:
+                    time.sleep(self._sleep_time_before_planner_tries_sec)
+                    continue
+                if not self.open_gripper():
+                    result.success = False
+                    goal_handle.abort()
+                    return result
+                # Executing lift trajectory
+                self.get_logger().info('Executing plan')
+                place_success, _ = self._planner.execute_plan(
+                    self.plan_result.planned_trajectory[1])
+                if not place_success:
+                    plan_only_retraction = True
+                    time.sleep(self._sleep_time_before_planner_tries_sec)
+                    continue
+                place_success = True
+                break
+            else:
+                self.get_logger().error('Planning for pick phase failed, trying again')
+            self.get_logger().info(
+                f'Waiting for {self._sleep_time_before_planner_tries_sec} seconds')
+            time.sleep(self._sleep_time_before_planner_tries_sec)
+
+        # Detach object
+        self.get_logger().info('Triggering object detachment')
+        self.trigger_object_attach(do_attach=False)
+        # Wait for action to be done
+        self._object_attach_done_event.wait()
+        if not self._object_attach_done_result:
+            self.get_logger().error('Failed to detach object.')
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        # Always do the object detachment even if the placement failed
+        if not place_success:
+            self.get_logger().error('Planning for drop phase failed.')
+            result.success = False
+            goal_handle.abort()
+            return result
+
+        """
         # Publish on Rviz for debugging where the robot will place the object
         self.publish_grasp_transform(place_pose, 'place_pose')
         place_success = False
@@ -917,17 +989,8 @@ class PickAndPlaceOrchestrator(Node):
             result.success = False
             goal_handle.abort()
             return result        
-
-        # Detach object
-        self.get_logger().info('Triggering object detachment')
-        self.trigger_object_attach(do_attach=False)
-        # Wait for action to be done
-        self._object_attach_done_event.wait()
-        if not self._object_attach_done_result:
-            self.get_logger().error('Failed to detach object.')
-            result.success = False
-            goal_handle.abort()
-            return result
+        
+        """
 
         goal_handle.succeed()
         result.success = True
