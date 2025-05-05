@@ -86,8 +86,8 @@ class PickAndPlaceController(Node):
             idx = int(obj.object_id)
             class_id = obj.detection_2d.results[0].hypothesis.class_id
             bbox = obj.detection_2d.bbox
+            self.get_logger().info(f"Object {idx} is Class {class_id}, bbox @ ({bbox.center.position.x}, {bbox.center.position.y}) wirh size({bbox.size_x}, {bbox.size_y})")
             if str(class_id) == str(self.target_class_id):
-                self.get_logger().info(f"Object {idx} is Class {class_id}, bbox @ ({bbox.center.position.x}, {bbox.center.position.y}) wirh size({bbox.size_x}, {bbox.size_y})")
                 if idx < grasp_object_id:
                     grasp_object_id = idx
 
