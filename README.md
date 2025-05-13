@@ -176,7 +176,7 @@ yolov8:
     5: OREO
 ```
 
-The key of first 2 layers are fixed. You only need to complete the class id and name pair. The name of each class is also the name of the folder which stores the 3D scanning data of each class.([3D Scanning Data](#3d-scanning-data))
+The key of first 2 layers are fixed. You only need to fill in class id and name pairs. The name of each class is also the name of the folder which stores the 3D scanning data of each class.([3D Scanning Data](#3d-scanning-data))
 
 ### Foundation Pose
 
@@ -220,7 +220,7 @@ Obj and texture image of each object should have the same name but are under dif
 
 ### Object Detection Workflow Test
 
-To check if all of the files, models, and the file structures are corret, we provide an isolated launch file which only runs the objection detection part.
+To check if all of the files, models, and the file structures are correct, we provide an isolated launch file which only runs the objection detection part.
 
 ```bash
 ros2 launch isaac_manipulator_pick_and_place object_detection_stream.launch.py static_transform:=<ABSOLUTE FILE PATH TO THE CAMERA CALIBRATION LAUNCH FILE> yolov8_object_class_id:=<YOUR TARGET CLASS ID>
@@ -235,12 +235,12 @@ ros2 launch isaac_manipulator_pick_and_place object_detection_stream.launch.py s
 
 To get the grasp pose for pick-and-place, a grasp file is necessary. Grasp file contains multiple pre-defined poses to grasp the object. The program will choose the best one for planning.
 
-To get the grasp file, you need a computer which has the `IsaacSim`, the `.usdz` file of the object, and the `.usd` file of your gripper.
+To get the grasp file, you need a computer, which has already installed the `IsaacSim`, the `.usdz` file of the object, and the `.usd` file of your gripper.
 
 ### Computer with IsaacSim
 
 [Installation Guide](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_workstation.html#omniverse-launcher)
-An `IsaacSim` installed in a Linux computer is recommened. There may be some issues with the `IsaacSim` in docker. 
+An `IsaacSim` installed in a Linux computer is recommened. We faced some issues with the `IsaacSim` in docker. 
 
 ### Usd File of Gripper
 
@@ -252,7 +252,9 @@ If youe are using Robotiq Hande, you could use the [urdf file](./isaac_manipulat
 
 You could follow the [tutorial](https://docs.isaacsim.omniverse.nvidia.com/latest/robot_setup/grasp_editor.html) to generate the grasp file. The file name must follow the format `[GRIPPER NAME]_grasps_[OBJECT NAME].yaml`, e.g. `robotiq_hande_grasps_Toilet_paper.yaml`.
 
-TODO: I met some issues to use the Grasp Editor in IsaacSim. The workaround is to manually record the relative pose of the gripper as grasping, that the target object's position must be [0,0,0] and the orientation is [1,0,0,0] (wxyz). Not sure if this is workable yet. Here is an example of a grasp file generated from scratch:
+TODO: I met some issues to use the Grasp Editor in IsaacSim. The workaround is to manually record the relative pose of the gripper as grasping, that the target object's position must be [0,0,0] and the orientation is [1,0,0,0] (wxyz). 
+
+Here is an example of a grasp file generated from scratch:
 
 ```yaml
 format: isaac_grasp
@@ -271,6 +273,8 @@ grasps:
       position: [-0.04135, 0.15417, 0.15794]
       orientation: {w:  0.28049, xyz: [0.95455, 0.02899, 0.0965]}
 ```
+
+**Noted**: Fine-tuning the position on-site is necessary. It is impossible to get a perfect grasp file only with IsaacSim.
 
 ## Run the Whole Pipeline
 
