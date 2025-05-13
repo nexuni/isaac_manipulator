@@ -792,6 +792,7 @@ class PickAndPlaceOrchestrator(Node):
                 if not pick_success:
                     time.sleep(self._sleep_time_before_planner_tries_sec)
                     continue
+                time.sleep(1)
                 if not self.close_gripper(position=0.015):
                     result.success = False
                     goal_handle.abort()
@@ -841,6 +842,7 @@ class PickAndPlaceOrchestrator(Node):
         self.publish_grasp_transform(place_pose, 'place_pose')
         place_success = False
 
+        time.sleep(1)
         # Go to place pose with move_grasp for attach and retract
         for i in range(self._num_planner_tries_):
             if goal_handle.status == GoalStatus.STATUS_CANCELING or \
@@ -870,6 +872,7 @@ class PickAndPlaceOrchestrator(Node):
                 if not place_success:
                     time.sleep(self._sleep_time_before_planner_tries_sec)
                     continue
+                time.sleep(1)
                 if not self.open_gripper():
                     result.success = False
                     goal_handle.abort()
