@@ -133,8 +133,8 @@ class PickAndPlaceOrchestrator(Node):
 
         self._action_server = ActionServer(
             self, PickAndPlace, '/pick_and_place',
-            # execute_callback=self.execute_callback, cancel_callback=self.cancel_callback,)
-            execute_callback=self.execute_callback_repeat, cancel_callback=self.cancel_callback,)
+            execute_callback=self.execute_callback, cancel_callback=self.cancel_callback,)
+            # execute_callback=self.execute_callback_repeat, cancel_callback=self.cancel_callback,)
         self._get_object_pose_cb_group = MutuallyExclusiveCallbackGroup()
         self._get_object_pose_client = ActionClient(
             self, GetObjectPose, '/get_object_pose', callback_group=self._get_object_pose_cb_group)
