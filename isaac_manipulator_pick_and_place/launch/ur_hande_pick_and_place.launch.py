@@ -558,7 +558,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{'attach_object_fallback_radius': 0.075,
                      'grasp_file_path': grasp_config_file,
                      'publish_grasp_frame': True,
-                     'time_dilation_factor': 0.3,
+                     'time_dilation_factor': 1.0, #0.3,
                      'gripper_collision_links': gripper_collision_links,
                      'attach_object_shape': object_attachment_type,
                      'attach_object_scale': attach_object_scale,
